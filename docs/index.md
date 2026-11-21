@@ -1,6 +1,6 @@
 # PinGoblin UPS HAT+ Library
 
-`ups_hat` gives software access to everything the PinGoblin UPS HAT+ can measure, control or report. This code will run on python / micropython compatible boards such as the Raspberry Pi, Arduino, and ESP32 and needs no third-party packages.
+The `ups_hat` library provides access to everything the PinGoblin UPS HAT+ can measure, control or report. This code will run on CPython / Micropython compatible boards such as the Raspberry Pi, Arduino, and ESP32 and needs no third-party packages.
 
 The library talks to the below IC's on the USB HAT's I²C bus. 
 

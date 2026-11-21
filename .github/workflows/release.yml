@@ -1,0 +1,47 @@
+name: Release
+
+# Push a tag such as v1.5.0 (matching the version in pyproject.toml,
+# ups_hat/__init__.py and micropython/package.json) to publish a release
+# with the precompiled MicroPython files attached.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      MP_VERSION: v1.25.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag matches the package version
+        run: python3 tools/check_packaging.py "$GITHUB_REF_NAME"
+      - name: Cache the MicroPython build
+        id: mpcache
+        uses: actions/cache@v4
+        with:
+          path: mp
+          key: micropython-${{ env.MP_VERSION }}-unix-v1
+      - name: Build MicroPython (unix port and mpy-cross)
+        if: steps.mpcache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y libffi-dev pkg-config
+          git clone --depth 1 --branch "$MP_VERSION" https://github.com/micropython/micropython.git mp
+          make -C mp/mpy-cross -j4
+          make -C mp/ports/unix submodules
+          make -C mp/ports/unix -j4
+      - name: Tests under CPython and MicroPython
+        run: |
+          python3 tests/test_ups_hat.py
+          mp/ports/unix/build-standard/micropython tests/test_ups_hat.py
+      - name: Compile to .mpy
+        run: tools/build_mpy.sh mp/mpy-cross/build/mpy-cross
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.zip \
+            --title "$GITHUB_REF_NAME" --generate-notes

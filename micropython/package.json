@@ -1,0 +1,38 @@
+{
+  "urls": [
+    [
+      "ups_hat/__init__.py",
+      "github:PinGoblin/UPS_HAT/ups_hat/__init__.py"
+    ],
+    [
+      "ups_hat/_compat.py",
+      "github:PinGoblin/UPS_HAT/ups_hat/_compat.py"
+    ],
+    [
+      "ups_hat/battery.py",
+      "github:PinGoblin/UPS_HAT/ups_hat/battery.py"
+    ],
+    [
+      "ups_hat/board.py",
+      "github:PinGoblin/UPS_HAT/ups_hat/board.py"
+    ],
+    [
+      "ups_hat/bq25798.py",
+      "github:PinGoblin/UPS_HAT/ups_hat/bq25798.py"
+    ],
+    [
+      "ups_hat/bus.py",
+      "github:PinGoblin/UPS_HAT/ups_hat/bus.py"
+    ],
+    [
+      "ups_hat/faults.py",
+      "github:PinGoblin/UPS_HAT/ups_hat/faults.py"
+    ],
+    [
+      "ups_hat/stusb4500.py",
+      "github:PinGoblin/UPS_HAT/ups_hat/stusb4500.py"
+    ]
+  ],
+  "deps": [],
+  "version": "1.4.0"
+}

@@ -25,6 +25,54 @@ jobs:
           python3 -m mypy ups_hat examples/pi_status.py examples/pi_daemon.py
       - name: Fault code page is up to date
         run: python3 tools/gen_faults_md.py --check
+      - name: Versions and MicroPython file list agree
+        run: python3 tools/check_packaging.py
+
+  micropython:
+    runs-on: ubuntu-latest
+    env:
+      MP_VERSION: v1.25.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache the MicroPython build
+        id: mpcache
+        uses: actions/cache@v4
+        with:
+          path: mp
+          key: micropython-${{ env.MP_VERSION }}-unix-v1
+      - name: Build MicroPython (unix port and mpy-cross)
+        if: steps.mpcache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y libffi-dev pkg-config
+          git clone --depth 1 --branch "$MP_VERSION" https://github.com/micropython/micropython.git mp
+          make -C mp/mpy-cross -j4
+          make -C mp/ports/unix submodules
+          make -C mp/ports/unix -j4
+      - name: Simulator tests under MicroPython
+        run: mp/ports/unix/build-standard/micropython tests/test_ups_hat.py
+      - name: Compile to .mpy
+        run: tools/build_mpy.sh mp/mpy-cross/build/mpy-cross
+      - name: Measure RAM use
+        run: |
+          MP=mp/ports/unix/build-standard/micropython
+          {
+            echo "## ups_hat RAM use (MicroPython $MP_VERSION, unix port, 64-bit)"
+            echo ""
+            echo "| Files | After import (bytes) | Running, after polls (bytes) | Smallest heap that works (KB) |"
+            echo "|---|---|---|---|"
+            for d in . build/mpy; do
+              name=$([ "$d" = . ] && echo ".py source" || echo ".mpy compiled")
+              r=$($MP tools/mp_mem.py "$d")
+              imp=$(echo "$r" | awk '/import_bytes/{print $2}')
+              run=$(echo "$r" | awk '/running_bytes/{print $2}')
+              heap=$(tools/mp_heap.sh $MP "$d")
+              echo "| $name | $imp | $run | $heap |"
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ups_hat-mpy
+          path: dist/*.zip
 
   docs:
     runs-on: ubuntu-latest

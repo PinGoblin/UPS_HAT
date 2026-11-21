@@ -1,6 +1,6 @@
 # Installation
 
-## CPython capable boards: e.g. Raspberry Pi
+## Python (e.g. Pi)
 
     1. Enable I²C: `sudo raspi-config` → Interface Options → I2C. Alternatively, add `dtparam=i2c_arm=on` to `/boot/firmware/config.txt`.
     2. Install the library straight from GitHub:
@@ -14,7 +14,7 @@
 
     The library opens `/dev/i2c-1` by itself. Run it as root, or add your user to the `i2c` group.
 
-## MicroPython
+## MicroPython (e.g. ESP32)
 
 Copy the `ups_hat` folder to the board:
 

@@ -1,0 +1,16 @@
+[Unit]
+Description=UPS HAT+ monitor
+After=multi-user.target
+
+[Service]
+Type=simple
+Environment=UPS_HAT_CELLS_PARALLEL=1
+Environment=UPS_HAT_CELL_MAH=3000
+Environment=UPS_HAT_CHARGE_VOLTAGE=8.2
+Environment=UPS_HAT_LOW_SOC=5
+ExecStart=/usr/bin/python3 /usr/local/lib/ups-hat/examples/pi_daemon.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

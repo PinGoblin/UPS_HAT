@@ -1,0 +1,15 @@
+#!/bin/sh
+# Install as /usr/lib/systemd/system-shutdown/ups-hat-shutdown (chmod +x).
+# systemd runs it as the very last step, with the action as $1.
+# poweroff/halt: no adapter -> ship mode (board off); adapter and low-battery
+# shutdown -> power-cycle so the Pi boots on mains. Never acts on reboot.
+case "$1" in
+  poweroff|halt)
+    if [ -e /run/ups-lowbatt ]; then
+      /usr/bin/python3 -m ups_hat.cli poweroff low
+    else
+      /usr/bin/python3 -m ups_hat.cli poweroff
+    fi
+    ;;
+esac
+exit 0

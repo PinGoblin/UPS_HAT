@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ups-hat"
+version = "1.4.0"
+description = "UPS HAT+ for Raspberry Pi: charger, USB-C PD and battery monitoring library (CPython and MicroPython)"
+readme = "README.md"
+requires-python = ">=3.7"
+
+[project.scripts]
+ups-hat = "ups_hat.cli:main"
+
+[tool.setuptools]
+packages = ["ups_hat"]

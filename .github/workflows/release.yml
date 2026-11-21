@@ -24,15 +24,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: mp
-          key: micropython-${{ env.MP_VERSION }}-unix-v1
+          key: micropython-${{ env.MP_VERSION }}-unix-v2
       - name: Build MicroPython (unix port and mpy-cross)
         if: steps.mpcache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update && sudo apt-get install -y libffi-dev pkg-config
           git clone --depth 1 --branch "$MP_VERSION" https://github.com/micropython/micropython.git mp
-          make -C mp/mpy-cross -j4
+          make -C mp/mpy-cross -j4 CFLAGS_EXTRA=-Wno-error
           make -C mp/ports/unix submodules
-          make -C mp/ports/unix -j4
+          make -C mp/ports/unix -j4 CFLAGS_EXTRA=-Wno-error
       - name: Tests under CPython and MicroPython
         run: |
           python3 tests/test_ups_hat.py

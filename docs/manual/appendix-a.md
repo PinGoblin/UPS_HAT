@@ -30,17 +30,16 @@ These limits apply to the Rev D board over 0–45 °C ambient unless the Conditi
 
 Charge current is reduced automatically when the input current limit is reached, so the Raspberry Pi's load always takes priority over charging.
 
-## A.3 Battery pack board (UPS Pack Rev A)
+## A.3 Battery pack board (UPS Pack Rev B)
 
 | Parameter | Conditions | Min | Typ | Max | Unit |
 | --- | --- | --- | --- | --- | --- |
 | Pack voltage range | 2S lithium-ion | 6.0 | 7.2 | 8.4 | V |
-| Cell over-charge cut-off (charging stops) | Per cell |  | 4.23 |  | V |
-| Cell over-discharge cut-off (output stops) | Per cell |  | 2.70 |  | V |
-| Discharge over-current cut-off † | 25 mV across the 3 mΩ sense resistor |  | 8.3 |  | A |
-| Second over-current level † | 50 mV across the sense resistor |  | 16.7 |  | A |
-| Short-circuit cut-off † | 100 mV across the sense resistor |  | 33 |  | A |
-| Charge over-current cut-off † | −15 mV across the sense resistor |  | 5 |  | A |
+| Cell over-charge cut-off (charging stops) | Per cell |  | 4.25 |  | V |
+| Cell over-discharge cut-off (output stops) | Per cell |  | 2.80 |  | V |
+| Discharge over-current cut-off † | 200 mV ±30 mV across the two protection MOSFETs | 8 |  | 19 | A |
+| Short-circuit detection | Voltage across the protection MOSFETs; 150–400 µs delay | 0.6 | 1.0 | 1.4 | V |
+| Charge over-current cut-off † | −210 mV across the protection MOSFETs | 10 |  | 17 | A |
 | Balancing turns on | Per cell, rising |  | 4.20 |  | V |
 | Balancing turns off | Per cell, falling |  | 4.19 |  | V |
 | Balancing current † | Per cell at 4.2 V: DUAL (270 Ω) / QUAD (120 Ω) |  | 15 / 35 |  | mA |
@@ -49,7 +48,7 @@ Charge current is reduced automatically when the input current limit is reached,
 | Pack fuse | F1, fast-acting |  | 10 |  | A |
 | Battery current at full output † | 5 A output, 6.0 V pack |  | 4.7 |  | A |
 
-The pack also refuses to charge a cell discharged to near 0 V. Detection delays and threshold tolerances are in the ABLIC S-82B2A datasheet. On the QUAD the temperature limits widen slightly, to 57.7–61.1 °C.
+The over-current figures are estimates from the MOSFETs' on-resistance at 6–8.4 V gate drive; in practice the 10 A fuse is the upper limit. After an over-discharge, a short circuit or an override by the switch or the temperature cut-off, the protector stays off until a charger is connected: plug in the HAT's USB-C adapter. Detection delays and threshold tolerances are in the HYCON HY2120 datasheet. On the QUAD the temperature limits widen slightly, to 57.7–61.1 °C.
 
 ## A.4 5 V output (header pins 2 and 4)
 
@@ -74,11 +73,11 @@ The output switch-on and switch-off limits include the converter's enable-thresh
 | Parameter | Conditions | Min | Typ | Max | Unit |
 | --- | --- | --- | --- | --- | --- |
 | HAT in ship mode (board off) | 8 V pack, Pi off; maximum is the production test limit |  | 11 † | 20 | µA |
-| Pack board, switch OFF † | Protector and balancers only |  | 20 |  | µA |
+| Pack board, switch OFF † | Plugged into the HAT / on its own |  | 30 / 250 |  | µA |
 | Pack board, switch ON † | Temperature monitor running: DUAL / QUAD |  | 0.50 / 0.56 |  | mA |
 | HAT running, no load † | Output on, Pi disconnected, includes the 5 V LED |  | 3 |  | mA |
 
-With the HAT in ship mode and the pack switched OFF, a 3,000 mAh pack loses under 1 % of its charge per month. With the pack switched ON, its temperature monitor adds about 12 mAh a day, so switch the pack off for storage.
+With the HAT in ship mode and the pack switched OFF, a 3,000 mAh pack loses about 1 % of its charge per month. With the pack switched ON, its temperature monitor adds about 12 mAh a day, so switch the pack off for storage.
 
 ## A.6 Interfaces and environment
 

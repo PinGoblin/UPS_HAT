@@ -31,7 +31,7 @@ The XT30 plug fits only one way round. It enters from above; to unplug, pull on 
 
 | Label | Item | What it does |
 | --- | --- | --- |
-| SW1 | On/off slide switch | OFF switches the pack output off completely (storage and transport). ON connects it |
+| SW1 | On/off slide switch | OFF switches the pack output off completely (storage and transport). ON enables it; on the HAT, the output returns the next time the HAT has USB-C power |
 | BT1, BT2 (DUAL); BT1–BT4 (QUAD) | 18650 holders | BT1 (and BT3) is cell 1, BT2 (and BT4) is cell 2. BT2 and BT4 face the other way: follow the + marks |
 | J1 | Lead pads | The 18 AWG lead to the XT30 plug: pad 1 P− (black), pad 2 P+ (red) |
 | RT1 (and RT2 on the QUAD) | Temperature sensors | Under the gap pads between the holders; they switch the pack off above about 60 °C |
@@ -49,7 +49,7 @@ The XT30 plug fits only one way round. It enters from above; to unplug, pull on 
 | PD controller supply | BAT54S diode | Powers the PD controller from the 5 V rail, so its I²C pins never hold the Pi's bus low, even when the board is off and the Pi runs from its own supply. |
 | HAT+ ID EEPROM | onsemi CAT24C32 | Identifies the board to the Raspberry Pi. |
 | Surge and ESD protection | SMAJ16A, PESD24VS2, PESD5V0X2 | Protects the USB-C input from voltage spikes and static discharge. |
-| Battery protector (pack board) | ABLIC S-82B2A with two MOSFETs | Watches each cell and disconnects the pack on over-charge, over-discharge or over-current, or when the switch or the temperature cut-off turns it off. |
+| Battery protector (pack board) | HYCON HY2120 with two MOSFETs | Watches each cell and disconnects the pack on over-charge, over-discharge or over-current. Two small MOSFETs (2N7002) override it when the switch or the temperature cut-off turns the pack off. |
 | Cell balancers (pack board) | HYCON HY2213, one per cell | Bleeds a cell above 4.20 V so the cells stay matched. |
 | Temperature cut-off (pack board) | LM393 comparator with NTC sensors | Switches the pack off above about 60 °C. |
 | Pack fuse (pack board) | 10 A SMD fuse (2410) | Protects the cells and wiring from short circuits. |

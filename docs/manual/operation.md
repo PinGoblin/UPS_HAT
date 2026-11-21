@@ -1,6 +1,6 @@
 # Operation
 
-The board has no on-board processor. The Raspberry Pi reads the board over I²C and decides when to shut down, so the ups-hat software must be installed for safe shutdowns.
+The board has no on-board processor. The Raspberry Pi reads the board over I²C and decides when to shut down, so the `ups-hat` service must be installed for safe shutdowns (see [Raspberry Pi configuration](pi-configuration.md)).
 
 | State | What happens | LEDs |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ The board has no on-board processor. The Raspberry Pi reads the board over I²C 
 
 **After a power cut:** when the adapter is reconnected, the board wakes and the Pi starts automatically, even if the battery was flat.
 
-**Pack switch and temperature cut-off.** The pack's own switch turns its output off completely; use it for storage and transport. If the cells reach about 60 °C, the pack switches itself off until they cool below about 56 °C. Without an adapter connected, the Pi then loses power without a clean shutdown, so give the pack ventilation and keep it out of the sun.
+**Pack switch and temperature cut-off.** The pack's own switch turns its output off completely; use it for storage and transport. If the cells reach about 60 °C, the pack switches itself off. On the HAT, after the switch is turned back ON or the cells have cooled below about 56 °C, the pack stays off until the HAT next has USB-C power: connect the adapter to bring it back. Without an adapter connected, the Pi then loses power without a clean shutdown, so give the pack ventilation and keep it out of the sun.
 
 **Temperature limits.** Keep the board, the pack and the Pi within these limits:
 
@@ -32,4 +32,4 @@ The board has no on-board processor. The Raspberry Pi reads the board over I²C 
 
 **Cold.** Frosts below 0 °C occur in inland and alpine Australia. Do not charge the pack below 0 °C: charging a cold lithium cell plates lithium inside it, which permanently reduces its capacity and can cause an internal short. Let a cold pack warm to room temperature before connecting the adapter.
 
-**Shutdown hook.** The package installs a hook that runs at the very end of every power-off. If no adapter is connected, it puts the charger into ship mode, which switches the board off immediately. It does nothing on a reboot, and nothing on mains power.
+**Shutdown hook.** The shutdown hook (installed in [Raspberry Pi configuration](pi-configuration.md)) runs at the very end of every power-off. If no adapter is connected, it puts the charger into ship mode, which switches the board off immediately. If the adapter is connected and the shutdown was for low battery, it power-cycles the Pi so that it boots on mains. It does nothing on a reboot, or after a normal shutdown on mains.

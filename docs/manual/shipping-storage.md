@@ -12,7 +12,7 @@
 **Storage**
 
 - Store the boards in their anti-static bags in a dry place between −20 °C and 60 °C.
-- For storage longer than a week, shut down the Pi on battery so the HAT enters ship mode, then switch the pack OFF. Switched on, the pack's temperature monitor draws about 0.5 mA (about 12 mAh a day).
+- For storage longer than a week, shut down the Pi on battery so the HAT enters ship mode, then switch the pack OFF. Switched on, the pack's temperature monitor draws about 0.5 mA (about 12 mAh a day). Unplugged from the HAT, a pack switched OFF still draws about 0.25 mA (about 6 mAh a day).
 - For storage longer than a month, charge the battery to about 50 % first, or remove the cells.
 - Store batteries between 10 °C and 25 °C, away from flammable materials, and check their charge every 3 months.
 

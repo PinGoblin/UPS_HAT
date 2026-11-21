@@ -2,7 +2,7 @@
 
 The UPS HAT+ keeps a Raspberry Pi running from a 2-cell (2S) lithium-ion battery when mains power fails, and shuts the Pi down cleanly before the battery runs flat. It powers the Pi through the 40-pin header at 5.1 V and up to 5 A, so a Raspberry Pi 5 can run at full load with USB peripherals attached.
 
-This manual covers the UPS HAT+ hardware revision D and its battery, the UPS Pack board Rev A (DUAL or QUAD). Read the [safety section](safety.md) before connecting a battery.
+This manual covers the UPS HAT+ hardware revision D and its battery, the UPS Pack board Rev B (DUAL or QUAD). Read the [safety section](safety.md) before connecting a battery.
 
 ![UPS HAT+ Rev D, 3D view on M2.5 standoffs](images/ups-hat-3d.png)
 

@@ -23,6 +23,6 @@ With the pack flat, switched off or tripped, nothing makes up a shortfall: if th
 | Low (3.3 V per cell) | 6.6 | 25.5 | ≈ 4.2 | 4.2 / 2.1 |
 | Software shutdown floor (3.1 V per cell) | 6.2 | 25.5 | ≈ 4.5 | 4.5 / 2.3 |
 
-At a typical 8 W Pi 5 load the pack supplies about 1.1–1.5 A. Every figure stays below the pack's 8.3 A overcurrent trip; cells must be rated for at least 5 A continuous.
+At a typical 8 W Pi 5 load the pack supplies about 1.1–1.5 A. Every figure stays below the pack's overcurrent trip (about 8 A at the lowest); cells must be rated for at least 5 A continuous.
 
 *Figures are calculated, not yet measured. They assume about 93–95 % charger efficiency and about 92 % from the system rail to the Pi header.*

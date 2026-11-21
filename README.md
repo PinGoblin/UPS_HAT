@@ -31,6 +31,7 @@ mkdocs serve        # preview at http://127.0.0.1:8000
 - [Low-level drivers](#low-level-drivers)
 - [Power-off integration on Raspberry Pi OS](#power-off-integration-on-raspberry-pi-os)
 - [MicroPython notes](#micropython-notes)
+- [Releases](#releases)
 - [Safety and limits](#safety-and-limits)
 - [Version 1.4.0](#version-140)
 - [Testing without hardware](#testing-without-hardware)
@@ -44,21 +45,27 @@ mkdocs serve        # preview at http://127.0.0.1:8000
 2. Install the library:
 
 ```sh
-sudo pip install .           # from this folder (add --break-system-packages on Bookworm)
-ups-hat status                # or: python3 -m ups_hat.cli status
+sudo pip install git+https://github.com/PinGoblin/UPS_HAT   # add --break-system-packages on Bookworm
+ups-hat status                                              # or: python3 -m ups_hat.cli status
 ```
 
 The library opens `/dev/i2c-1` by itself. Run it as root, or add your user to the `i2c` group.
 
 ### MicroPython
 
-Copy the `ups_hat` folder to the board:
+Recommended: download `ups_hat-mpy-<version>.zip` from the [latest release](https://github.com/PinGoblin/UPS_HAT/releases/latest), unzip it and copy the folder to the board:
 
 ```sh
 mpremote cp -r ups_hat :
 ```
 
-Boards with little RAM should use the precompiled `.mpy` files from `build/mpy/ups_hat` instead. These need MicroPython 1.19 or later.
+Or install the source files with `mip`:
+
+```sh
+mpremote mip install github:PinGoblin/UPS_HAT/micropython
+```
+
+The `.mpy` files need about 90 KB of free heap on a 32-bit board, the `.py` files about 130 KB (measured in CI; see the MicroPython notes in the documentation). The command-line tool and Pi 5 monitoring are Raspberry Pi only.
 
 ## Quick start
 
@@ -332,9 +339,14 @@ Edit the `Environment=` lines in `ups-hat.service` to match your cells.
 
 ## MicroPython notes
 
-- The library imports about 100 KB of RAM on a 64-bit build, and roughly half that on 32-bit boards. RP2040, RP2350 and ESP32 boards are suitable. On smaller boards, use the `.mpy` files or freeze the package into the firmware.
+- RAM use, measured on MicroPython v1.25.0 (32-bit unix port): about 72 KB while running, and a heap of at least 90 KB with `.mpy` files or 130 KB with `.py` files (which the board must compile). Check yours with `gc.mem_free()` before importing.
+- Docstrings are discarded when MicroPython compiles the code, so they cost no RAM.
 - `vcgencmd` monitoring is not available on MicroPython. Pass `pi_monitor=False`.
 - `state_file` works on boards with a filesystem, but flash wears with frequent writes. The library saves at most every 5 minutes.
+
+## Releases
+
+Push a tag such as `v1.5.0` (after setting that version in `pyproject.toml`, `ups_hat/__init__.py` and `micropython/package.json`; `python3 tools/check_packaging.py v1.5.0` checks them). GitHub then builds the `.mpy` files and publishes a release with `ups_hat-mpy-1.5.0.zip` attached.
 
 ## Safety and limits
 

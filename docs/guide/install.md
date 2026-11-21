@@ -2,36 +2,50 @@
 
 ## CPython capable boards: e.g. Raspberry Pi
 
-1. Enable I²C: `sudo raspi-config` → Interface Options → I2C. Alternatively, add `dtparam=i2c_arm=on` to `/boot/firmware/config.txt`.
-2. Install the library from the repository folder:
+    1. Enable I²C: `sudo raspi-config` → Interface Options → I2C. Alternatively, add `dtparam=i2c_arm=on` to `/boot/firmware/config.txt`.
+    2. Install the library straight from GitHub:
 
-    ```sh
-    sudo pip install .           # add --break-system-packages on Bookworm
-    ups-hat status               # or: python3 -m ups_hat.cli status
-    ```
+        ```sh
+        sudo pip install git+https://github.com/PinGoblin/UPS_HAT   # add --break-system-packages on Bookworm
+        ups-hat status                                              # or: python3 -m ups_hat.cli status
+        ```
 
-The library opens `/dev/i2c-1` by itself. Run it as root, or add your user to the `i2c` group.
+        To install a particular release, add its tag: `git+https://github.com/PinGoblin/UPS_HAT@v1.4.0`. From a downloaded copy of the repository, use `sudo pip install .` instead.
 
-## MicroPython capable boards
+    The library opens `/dev/i2c-1` by itself. Run it as root, or add your user to the `i2c` group.
+
+## MicroPython
 
 Copy the `ups_hat` folder to the board:
 
-```sh
-mpremote cp -r ups_hat :
-```
+    ```sh
+    mpremote cp -r ups_hat :
+    ```
 
-Boards with little RAM should use precompiled `.mpy` files instead (MicroPython 1.19 or later). The `.pyi` type stubs and `py.typed` are not needed on the board.
+    The board then loads the files without compiling them, which needs much less RAM. `README.txt` in the zip shows the `.mpy` version the files were built for; it must match your firmware.
 
-```python
-from machine import I2C, Pin
-from ups_hat import UPS
+    **Source files with `mip`.** Installs the `.py` files from GitHub into `/lib` on the board:
 
-ups = UPS(I2C(0, sda=Pin(4), scl=Pin(5), freq=400000), pi_monitor=False)
-```
+    ```sh
+    mpremote mip install github:PinGoblin/UPS_HAT/micropython            # latest
+    mpremote mip install github:PinGoblin/UPS_HAT/micropython@v1.4.0     # a release
+    ```
 
-See [MicroPython notes](micropython.md).
+    The board compiles these when you import them, which needs extra RAM: see [MicroPython notes](micropython.md) for how much.
+
+    Then, for example on a Raspberry Pi Pico:
+
+    ```python
+    from machine import I2C, Pin
+    from ups_hat import UPS
+
+    ups = UPS(I2C(0, sda=Pin(4), scl=Pin(5), freq=400000), pi_monitor=False)
+    print(ups.report())
+    ```
 
 ## Command-line tool
+
+Raspberry Pi only.
 
 | Command | What it does |
 |---|---|

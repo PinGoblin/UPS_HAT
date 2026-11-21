@@ -1,18 +1,25 @@
-"""UPS HAT+ for Raspberry Pi: Python / MicroPython library.
+"""UPS HAT+ for Raspberry Pi: Python and MicroPython library.
 
-Quick start (Raspberry Pi)::
+The package re-exports everything most programs need, so `from ups_hat import UPS`
+is enough for normal use.
 
+Example: Raspberry Pi
+    ```python
     from ups_hat import UPS
+
     ups = UPS(cells_parallel=1, cell_capacity_mah=3000)
     print(ups.report())
+    ```
 
-Quick start (MicroPython)::
-
+Example: MicroPython
+    ```python
     from machine import I2C, Pin
     from ups_hat import UPS
+
     ups = UPS(I2C(0, sda=Pin(4), scl=Pin(5), freq=400000), pi_monitor=False)
     s = ups.poll()
     print(s.vbat, s.soc, s.fault_codes())
+    ```
 """
 
 from .board import UPS, Snapshot, FACTORY_PDOS

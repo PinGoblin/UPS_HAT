@@ -1,7 +1,7 @@
-"""Raspberry Pi 5 supply monitoring through ``vcgencmd`` (Linux only).
+"""Raspberry Pi 5 supply monitoring through `vcgencmd` (Linux only).
 
-On MicroPython, or on a Pi without vcgencmd, :attr:`PiPower.available` is False
-and every reading returns None.
+On MicroPython, or on a Pi without `vcgencmd`,
+[`PiPower.available`][ups_hat.pimon.PiPower] is `False` and every reading returns `None`.
 """
 
 THROTTLE_BITS = (
@@ -12,6 +12,12 @@ THROTTLE_BITS = (
 
 
 class PiPower:
+    """Reads the Pi's own supply state through `vcgencmd`.
+
+    Attributes:
+        available (bool): `vcgencmd get_throttled` worked when the object was created.
+    """
+
     def __init__(self):
         self.available = False
         self._run = None
@@ -33,7 +39,13 @@ class PiPower:
             return None
 
     def throttled(self):
-        """Dict of throttling flags, or None."""
+        """Read the firmware's throttling flags.
+
+        Returns:
+            A dict of booleans (`under_voltage`, `arm_freq_capped`, `throttled`,
+            `soft_temp_limit` and the matching `*_occurred` flags since boot) plus `raw`, the
+            integer value. `None` if unavailable.
+        """
         if not self.available:
             return None
         out = self._cmd("get_throttled")
@@ -45,7 +57,11 @@ class PiPower:
         return d
 
     def ext5v(self):
-        """Pi 5 5 V input voltage (EXT5V_V) from the PMIC ADC, or None (Pi 4 and earlier)."""
+        """Read the Pi 5's 5 V input voltage from its PMIC ADC (`EXT5V_V`).
+
+        Returns:
+            Volts, or `None` on a Pi 4 or earlier, or if unavailable.
+        """
         if not self.available:
             return None
         out = self._cmd("pmic_read_adc", "EXT5V_V")

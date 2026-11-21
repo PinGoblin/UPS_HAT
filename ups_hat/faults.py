@@ -1,19 +1,25 @@
-"""Fault codes reported by :class:`ups_hat.UPS`.
+"""Fault codes reported by [`UPS`][ups_hat.board.UPS].
 
-Each fault has a stable string code (safe to log or match on), a severity,
-the source it came from, a one-line message and advice for the user.
+Each fault has a stable string code (safe to log or match on), a severity, the source it
+came from, a one-line message and advice for the user. The full list is
+[`CATALOGUE`][ups_hat.faults.CATALOGUE]; the [Fault codes](../faults.md) page shows it
+as a table.
 
-Sources:
-    charger   read from BQ25798 registers
-    pd        read from STUSB4500 registers
-    bus       an I2C device did not answer
-    inferred  worked out from measurements over time (a strong hint, not proof)
-    pi        read from the Raspberry Pi 5 firmware (vcgencmd)
+| Source | Meaning |
+|---|---|
+| `charger` | Read from BQ25798 registers. |
+| `pd` | Read from STUSB4500 registers. |
+| `bus` | An I²C device did not answer. |
+| `inferred` | Worked out from measurements over time: a strong hint, not proof. |
+| `pi` | Read from the Raspberry Pi 5 firmware (`vcgencmd`). |
 """
 
 INFO = 0
+"""Severity 0: information, no action needed."""
 WARNING = 1
+"""Severity 1: needs attention."""
 CRITICAL = 2
+"""Severity 2: needs action now."""
 SEVERITY_NAMES = ("info", "warning", "critical")
 
 # code: (severity, source, message, advice)
@@ -102,10 +108,32 @@ CATALOGUE = {
     "PI_EXTERNAL_SUPPLY": (INFO, "inferred", "The Pi appears to be powered from its own USB-C supply.",
                            "The UPS is not carrying the load. Remove the Pi's own supply to get battery backup."),
 }
+"""Every fault code: `{code: (severity, source, message, advice)}`. See [Fault codes](../faults.md)."""
 
 
 class Fault:
-    """One active or transient fault."""
+    """One active or transient fault.
+
+    The severity, source, message and advice come from
+    [`CATALOGUE`][ups_hat.faults.CATALOGUE]. An unknown code is treated as a warning with
+    source `inferred`.
+
+    Args:
+        code: Fault code, for example `"BAT_LOW"`.
+        data: Measurements that explain the fault, for example `{"soc": 12.5}`.
+        transient: The fault appeared and cleared between two polls.
+        since: Monotonic time (s) when the fault first became active.
+
+    Attributes:
+        code (str): Fault code.
+        severity (int): 0 = info, 1 = warning, 2 = critical.
+        source (str): `charger`, `pd`, `bus`, `inferred` or `pi`.
+        message (str): One-line description.
+        advice (str): What the user should do; may be empty.
+        data (dict): Measurements that explain the fault.
+        transient (bool): The fault came and went between two polls.
+        since (float | None): Monotonic time (s) when it became active.
+    """
 
     def __init__(self, code, data=None, transient=False, since=None):
         sev, src, msg, adv = CATALOGUE.get(code, (WARNING, "inferred", code, ""))
@@ -120,9 +148,15 @@ class Fault:
 
     @property
     def severity_name(self):
+        """Severity as text: `"info"`, `"warning"` or `"critical"`."""
         return SEVERITY_NAMES[self.severity]
 
     def to_dict(self):
+        """Convert to a JSON-serialisable dictionary.
+
+        Returns:
+            The fault's attributes, with the severity as text.
+        """
         return {"code": self.code, "severity": self.severity_name, "source": self.source,
                 "message": self.message, "advice": self.advice, "data": self.data,
                 "transient": self.transient, "since": self.since}

@@ -4,3 +4,4 @@ __pycache__/
 build/
 dist/
 ups_hat_test_state*.json
+site/

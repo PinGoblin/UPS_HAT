@@ -1,38 +1,60 @@
-"""I2C access for the UPS HAT+.
+"""I²C access and the library's exception classes.
 
-Any object with MicroPython's ``machine.I2C`` memory methods works::
+Any object with MicroPython's `machine.I2C` memory methods can carry the bus:
 
-    readfrom_mem(addr, reg, nbytes) -> bytes
-    writeto_mem(addr, reg, buf)
+```python
+readfrom_mem(addr, reg, nbytes) -> bytes
+writeto_mem(addr, reg, buf)
+```
 
-On a Raspberry Pi (CPython) use :class:`LinuxI2C`, which talks to
-``/dev/i2c-N`` directly and needs no extra packages.
+On a Raspberry Pi (CPython), [`LinuxI2C`][ups_hat.bus.LinuxI2C] talks to `/dev/i2c-N`
+directly and needs no extra packages.
 """
 
 from ._compat import to_signed16
 
 
 class UPSError(Exception):
-    """Base class for all errors raised by this library."""
+    """Base class for every error raised by this library."""
 
 
 class DeviceNotFound(UPSError):
-    """A chip did not answer on the I2C bus or reported the wrong ID."""
+    """A chip did not answer on the I²C bus, or reported the wrong ID."""
 
 
 class BusError(UPSError):
-    """An I2C transfer failed."""
+    """An I²C transfer failed."""
 
 
 class NotSupported(UPSError):
-    """The operation is not possible on this board or in this environment."""
+    """The operation is not possible on this board or in this environment.
+
+    Raised, for example, by the power-off methods on a board built without the ship FET.
+    """
 
 
 class LinuxI2C:
-    """``machine.I2C``-compatible wrapper for Linux ``/dev/i2c-N``.
+    """`machine.I2C`-compatible wrapper for Linux `/dev/i2c-N`.
 
-    Uses plain read()/write() on the character device, so it needs no
-    third-party package. The Pi's header I2C is bus 1.
+    Uses plain `read()`/`write()` on the character device, so it needs no third-party
+    package. The Raspberry Pi header I²C (pins 3 and 5) is bus 1.
+
+    Can be used as a context manager, which closes the device on exit.
+
+    Args:
+        bus: I²C bus number.
+
+    Raises:
+        OSError: The device file does not exist or cannot be opened (I²C disabled, or no
+            permission: run as root or join the `i2c` group).
+
+    Example:
+        ```python
+        from ups_hat import LinuxI2C, BQ25798
+
+        with LinuxI2C(1) as i2c:
+            print(BQ25798(i2c).read_adc())
+        ```
     """
 
     I2C_SLAVE = 0x0703
@@ -52,6 +74,19 @@ class LinuxI2C:
             self._addr = addr
 
     def readfrom_mem(self, addr, reg, nbytes):
+        """Read consecutive registers from a device.
+
+        Args:
+            addr: 7-bit device address.
+            reg: First register address.
+            nbytes: Number of bytes to read.
+
+        Returns:
+            The bytes read.
+
+        Raises:
+            OSError: The transfer failed or returned fewer bytes than asked for.
+        """
         self._select(addr)
         self._os.write(self._fd, bytes([reg]))
         data = self._os.read(self._fd, nbytes)
@@ -60,10 +95,25 @@ class LinuxI2C:
         return data
 
     def writeto_mem(self, addr, reg, buf):
+        """Write consecutive registers on a device.
+
+        Args:
+            addr: 7-bit device address.
+            reg: First register address.
+            buf: Bytes to write.
+
+        Raises:
+            OSError: The transfer failed.
+        """
         self._select(addr)
         self._os.write(self._fd, bytes([reg]) + bytes(buf))
 
     def scan(self):
+        """List the devices that answer on the bus.
+
+        Returns:
+            7-bit addresses (0x08 to 0x77) that acknowledged a one-byte read.
+        """
         found = []
         for addr in range(0x08, 0x78):
             try:
@@ -74,6 +124,7 @@ class LinuxI2C:
         return found
 
     def close(self):
+        """Close the device file. Safe to call more than once."""
         if self._fd is not None:
             self._os.close(self._fd)
             self._fd = None
@@ -86,11 +137,21 @@ class LinuxI2C:
 
 
 def open_bus(bus=1):
-    """Return an I2C object for the current platform.
+    """Return an I²C object for the current platform.
 
-    On Linux this is :class:`LinuxI2C` on ``/dev/i2c-<bus>``. On MicroPython
-    create ``machine.I2C`` yourself (pins differ between boards) and pass it
-    to :class:`ups_hat.UPS`.
+    On Linux this is a [`LinuxI2C`][ups_hat.bus.LinuxI2C] on `/dev/i2c-<bus>`. On
+    MicroPython, create `machine.I2C` yourself (pins differ between boards) and pass it to
+    [`UPS`][ups_hat.board.UPS].
+
+    Args:
+        bus: I²C bus number (Linux only).
+
+    Returns:
+        An object with `readfrom_mem()` and `writeto_mem()`.
+
+    Raises:
+        NotSupported: Called on MicroPython.
+        OSError: The Linux device file cannot be opened.
     """
     import sys
     if sys.implementation.name == "micropython":
@@ -99,7 +160,15 @@ def open_bus(bus=1):
 
 
 class I2CDevice:
-    """Register access helpers for one chip."""
+    """Register access helpers for one chip.
+
+    All methods raise [`BusError`][ups_hat.bus.BusError] when a transfer fails.
+
+    Args:
+        i2c: Bus object with `readfrom_mem()` and `writeto_mem()`.
+        address: 7-bit device address.
+        name: Chip name used in error messages.
+    """
 
     def __init__(self, i2c, address, name="device"):
         self.i2c = i2c
@@ -107,45 +176,136 @@ class I2CDevice:
         self.name = name
 
     def read(self, reg, n):
+        """Read consecutive registers.
+
+        Args:
+            reg: First register address.
+            n: Number of bytes.
+
+        Returns:
+            The bytes read.
+
+        Raises:
+            BusError: The transfer failed.
+        """
         try:
             return self.i2c.readfrom_mem(self.address, reg, n)
         except OSError as e:
             raise BusError("%s (0x%02X): read of 0x%02X failed: %s" % (self.name, self.address, reg, e))
 
     def write(self, reg, data):
+        """Write consecutive registers.
+
+        Args:
+            reg: First register address.
+            data: Bytes (or byte values) to write.
+
+        Raises:
+            BusError: The transfer failed.
+        """
         try:
             self.i2c.writeto_mem(self.address, reg, bytes(data))
         except OSError as e:
             raise BusError("%s (0x%02X): write to 0x%02X failed: %s" % (self.name, self.address, reg, e))
 
     def u8(self, reg):
+        """Read one 8-bit register.
+
+        Args:
+            reg: Register address.
+
+        Returns:
+            The register value, 0 to 255.
+        """
         return self.read(reg, 1)[0]
 
     def set_u8(self, reg, value):
+        """Write one 8-bit register.
+
+        Args:
+            reg: Register address.
+            value: Value; only the low 8 bits are written.
+        """
         self.write(reg, (value & 0xFF,))
 
     def u16be(self, reg):
+        """Read a 16-bit register pair, most significant byte first.
+
+        Args:
+            reg: Address of the high byte.
+
+        Returns:
+            The value, 0 to 65535.
+        """
         b = self.read(reg, 2)
         return (b[0] << 8) | b[1]
 
     def s16be(self, reg):
+        """Read a signed 16-bit register pair, most significant byte first.
+
+        Args:
+            reg: Address of the high byte.
+
+        Returns:
+            The value, -32768 to 32767.
+        """
         return to_signed16(self.u16be(reg))
 
     def set_u16be(self, reg, value):
+        """Write a 16-bit register pair, most significant byte first.
+
+        Args:
+            reg: Address of the high byte.
+            value: Value, 0 to 65535.
+        """
         self.write(reg, ((value >> 8) & 0xFF, value & 0xFF))
 
     def u32le(self, reg):
+        """Read a 32-bit value stored least significant byte first.
+
+        Args:
+            reg: Address of the lowest byte.
+
+        Returns:
+            The value, 0 to 2³²−1.
+        """
         b = self.read(reg, 4)
         return b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24)
 
     def set_u32le(self, reg, value):
+        """Write a 32-bit value, least significant byte first.
+
+        Args:
+            reg: Address of the lowest byte.
+            value: Value, 0 to 2³²−1.
+        """
         self.write(reg, (value & 0xFF, (value >> 8) & 0xFF, (value >> 16) & 0xFF, (value >> 24) & 0xFF))
 
     def field(self, reg, shift, width, wide=False):
+        """Read a bit field.
+
+        Args:
+            reg: Register address (the high byte when `wide` is true).
+            shift: Position of the field's lowest bit.
+            width: Field width in bits.
+            wide: Read the field from a 16-bit big-endian register pair.
+
+        Returns:
+            The field value.
+        """
         v = self.u16be(reg) if wide else self.u8(reg)
         return (v >> shift) & ((1 << width) - 1)
 
     def set_field(self, reg, shift, width, value, wide=False):
+        """Read-modify-write a bit field, leaving the other bits unchanged.
+
+        Args:
+            reg: Register address (the high byte when `wide` is true).
+            shift: Position of the field's lowest bit.
+            width: Field width in bits.
+            value: New field value; excess bits are masked off.
+            wide: The field is in a 16-bit big-endian register pair.
+        """
         mask = ((1 << width) - 1) << shift
         v = self.u16be(reg) if wide else self.u8(reg)
         v = (v & ~mask) | ((int(value) << shift) & mask)
@@ -155,12 +315,33 @@ class I2CDevice:
             self.set_u8(reg, v)
 
     def bit(self, reg, n):
+        """Read one bit.
+
+        Args:
+            reg: Register address.
+            n: Bit number, 0 = least significant.
+
+        Returns:
+            `True` if the bit is set.
+        """
         return bool((self.u8(reg) >> n) & 1)
 
     def set_bit(self, reg, n, on):
+        """Set or clear one bit, leaving the others unchanged.
+
+        Args:
+            reg: Register address.
+            n: Bit number, 0 = least significant.
+            on: `True` to set, `False` to clear.
+        """
         self.set_field(reg, n, 1, 1 if on else 0)
 
     def present(self):
+        """Check that the chip answers.
+
+        Returns:
+            `True` if a one-byte read of register 0 succeeds.
+        """
         try:
             self.i2c.readfrom_mem(self.address, 0, 1)
             return True

@@ -1,4 +1,8 @@
-"""High-level interface to the UPS HAT+ (Rev D and later)."""
+"""High-level interface to the UPS HAT+ (Rev D and later).
+
+[`UPS`][ups_hat.board.UPS] is the class most programs use. Each
+[`poll()`][ups_hat.board.UPS.poll] returns a [`Snapshot`][ups_hat.board.Snapshot].
+"""
 
 import json
 
@@ -12,19 +16,70 @@ from ._compat import now_s, wall_time, clamp, sleep_ms
 
 # Factory USB-PD sink configuration (written in the test jig).
 FACTORY_PDOS = ((5.0, 3.0), (9.0, 3.0), (15.0, 3.0))
+"""USB PD sink profiles written in the factory, as `(volts, amps)`: 5 V / 3 A, 9 V / 3 A and 15 V / 3 A."""
 STANDARD_PD_VOLTAGES = (5.0, 9.0, 12.0, 15.0, 20.0)
 
 # Board limits
 CHARGE_VOLTAGE_RANGE = (7.0, 8.4)      # 3.5-4.2 V per cell
+"""Allowed pack charge voltage (V): 7.0 to 8.4 (3.5 to 4.2 V per cell)."""
 CHARGE_CURRENT_MAX = 3.0
+"""Highest charge current (A)."""
 INPUT_CURRENT_MAX = 3.0                # USB-C cable/contract limit
+"""Highest USB-C input current limit (A)."""
 OUTPUT_POWER_LIMIT = 25.5              # 5.1 V x 5 A
+"""5.1 V output rating (W): 5.1 V × 5 A."""
 CHARGER_EFFICIENCY = 0.95
 OUTPUT_EFFICIENCY = 0.93
 
 
 class Snapshot:
-    """Everything measured or worked out in one :meth:`UPS.poll`."""
+    """Everything measured or worked out in one [`UPS.poll()`][ups_hat.board.UPS.poll].
+
+    Values are `None` when the chip that provides them did not answer.
+
+    Attributes:
+        time (float): Monotonic seconds.
+        wall_time (float | None): Seconds since the epoch, `None` if the clock is not set.
+        charger_ok (bool): The charger answered.
+        pd_ok (bool): The USB-C controller answered.
+        adc (ADCReading | None): Raw charger ADC reading.
+        vbus (float): USB-C input voltage (V).
+        ibus (float): USB-C input current (A).
+        vbat (float): Battery voltage (V).
+        ibat (float): Battery current (A); positive = charging.
+        vsys (float): System rail feeding the 5.1 V converter (V).
+        tdie (float): Charger die temperature (°C).
+        ts_pct (float): Charger TS input as % of REGN; about 60 % on Rev D (no NTC).
+        status (dict): Decoded charger status.
+        charger_faults (list[str]): Charger faults active now.
+        flags (dict): Latched flags since the last poll: `{"charger": [...], "fault": [...]}`.
+        adapter_present (bool): Voltage on the USB-C input.
+        power_good (bool): The adapter is good enough to power the board.
+        on_battery (bool): The board is running from the cells.
+        charging (bool): A charge phase is in progress.
+        charge_state (int): Charger state code, 0 to 7.
+        charge_state_text (str): Charger state as text.
+        battery_present (bool): A battery is detected.
+        soc (float | None): State of charge (%).
+        remaining_mah (float | None): Remaining charge (mAh).
+        capacity_mah (float): Capacity (mAh), learned or rated.
+        time_to_empty_h (float | None): Hours to empty at the present current.
+        time_to_full_h (float | None): Hours to full at the present current.
+        battery_resistance (float | None): Battery-path resistance (Ω).
+        input_power (float): Power from the adapter (W).
+        battery_power (float): Power from the battery (W); negative while charging.
+        output_power (float): Estimated 5.1 V output power (W).
+        pd (dict): USB-C status: attach state, CC levels, orientation, policy-engine state,
+            contract and events.
+        contract (Contract | None): Raw USB PD contract.
+        contract_voltage (float | None): Contract voltage (V).
+        contract_current (float | None): Contract current (A).
+        pi (dict): `{"throttled": {...}, "ext5v": volts}` on a Pi 5, otherwise empty.
+        faults (list[Fault]): Active and transient faults, most severe first.
+        new_faults (list[Fault]): Faults that appeared in this poll.
+        cleared_faults (list[Fault]): Faults that cleared in this poll.
+        should_shutdown (bool): The battery is critically low; shut the Pi down now.
+    """
 
     def __init__(self):
         self.time = None
@@ -64,12 +119,28 @@ class Snapshot:
         self.should_shutdown = False
 
     def fault_codes(self):
+        """List the codes of the faults in this snapshot.
+
+        Returns:
+            Fault codes, most severe first.
+        """
         return [f.code for f in self.faults]
 
     def worst_severity(self):
+        """Find the most severe fault.
+
+        Returns:
+            0 = info, 1 = warning, 2 = critical, or -1 when there are no faults.
+        """
         return max([f.severity for f in self.faults] or [-1])
 
     def to_dict(self):
+        """Convert to a JSON-serialisable dictionary.
+
+        Returns:
+            The measured and derived values, the decoded status and the faults. The raw
+            `adc` and `contract` objects are left out.
+        """
         keys = ("time", "wall_time", "charger_ok", "pd_ok", "vbus", "ibus", "vbat", "ibat", "vsys", "tdie", "ts_pct",
                 "adapter_present", "power_good", "on_battery", "charging", "charge_state", "charge_state_text",
                 "battery_present", "soc", "remaining_mah", "capacity_mah", "time_to_empty_h", "time_to_full_h",
@@ -88,30 +159,55 @@ class Snapshot:
 class UPS:
     """The UPS HAT+.
 
-    Parameters
-    ----------
-    i2c : machine.I2C-like object, optional
-        Defaults to ``/dev/i2c-1`` on Linux. Required on MicroPython.
-    cells_parallel : 1 or 2
-        2S1P (two cells) or 2S2P (four cells).
-    cell_capacity_mah : float
-        Rated capacity of one cell.
-    charge_voltage : float
-        Pack charge voltage, 7.0-8.4 V. 8.2 V (4.10 V/cell) is the default for long life.
-    charge_current : float, optional
-        Default 1.5 A for 2S1P, 2.0 A for 2S2P.
-    ship_fet : bool
-        True when the board has the SDRV ship FET fitted (needed for power_off/ship mode).
-    state_file : str, optional
-        Where to keep learned battery data between runs (JSON). None = keep in memory only.
-    low_battery_soc, low_battery_voltage : float
-        Below either (on battery) ``should_shutdown`` becomes True.
-    auto_configure : bool
-        Apply the charger settings now, and re-apply them if the charger resets.
-    protect : bool
-        Stop charging when the battery reads like a wiring fault, and resume when it clears.
-    pi_monitor : bool
-        Read the Pi 5 supply state through vcgencmd when available.
+    Creating the object connects to both chips and, with `auto_configure`, applies the
+    charger settings. Call [`poll()`][ups_hat.board.UPS.poll] every 1–5 s.
+
+    Args:
+        i2c: Object with MicroPython `machine.I2C` memory methods. Defaults to
+            `/dev/i2c-<bus>` on Linux; required on MicroPython.
+        cells_parallel: 1 = 2S1P (two cells), 2 = 2S2P (four cells).
+        cell_capacity_mah: Rated capacity of one cell (mAh).
+        charge_voltage: Pack charge voltage (V), clamped to 7.0–8.4 V. 8.2 V (4.10 V per
+            cell) gives long cell life.
+        charge_current: Charge current (A), clamped to 0.1–3.0 A. Defaults to 1.5 A for
+            2S1P and 2.0 A for 2S2P.
+        ship_fet: The board has the SDRV ship FET fitted. Needed for
+            [`power_off()`][ups_hat.board.UPS.power_off] and ship mode.
+        state_file: JSON file that keeps learned battery data between runs. `None` keeps
+            it in memory only.
+        low_battery_soc: On battery, `should_shutdown` becomes true at or below this state
+            of charge (%).
+        low_battery_voltage: On battery, `should_shutdown` becomes true at or below this
+            pack voltage (V).
+        auto_configure: Apply the charger settings now, and re-apply them if the charger
+            resets.
+        protect: Stop charging while the battery reads like a wiring fault, and resume
+            when it clears.
+        pi_monitor: Read the Pi 5 supply state through `vcgencmd` when available.
+        bus: Linux I²C bus number, used when `i2c` is `None`.
+
+    Raises:
+        ValueError: `cells_parallel` is not 1 or 2.
+        NotSupported: `i2c` is `None` on MicroPython.
+
+    Attributes:
+        charger (BQ25798 | None): Charger driver, `None` while the chip is not answering.
+        pd (STUSB4500 | None): USB-C controller driver, `None` while it is not answering.
+        battery (BatteryMonitor): State-of-charge, capacity and resistance model.
+        pi (PiPower | None): Pi 5 supply monitor, `None` if unavailable.
+
+    Example:
+        ```python
+        from ups_hat import UPS
+
+        ups = UPS(cells_parallel=2, cell_capacity_mah=2500, state_file="/var/lib/ups-hat/state.json")
+
+        @ups.on_fault
+        def alert(fault):
+            print(fault)
+
+        ups.run(interval_s=2)
+        ```
     """
 
     def __init__(self, i2c=None, cells_parallel=1, cell_capacity_mah=3000.0, charge_voltage=8.2,
@@ -200,7 +296,16 @@ class UPS:
 
     # ---- configuration ---------------------------------------------------------------
     def configure(self):
-        """Apply the board's charger settings. Safe to call at any time."""
+        """Apply the board's charger settings. Safe to call at any time.
+
+        Turns the charger watchdog off, the ADC on (continuous, 15-bit) and discharge-current
+        sensing on; sets the charge voltage and current; sets `SFET_PRESENT` when the ship FET
+        is fitted; and restores the charge-enable state.
+
+        Raises:
+            DeviceNotFound: The charger is not answering.
+            BusError: An I²C transfer failed.
+        """
         c = self._need_charger()
         c.watchdog_s = 0                           # settings hold without host kicks
         c.adc_enable(True, continuous=True, bits=15)
@@ -224,7 +329,18 @@ class UPS:
         return False
 
     def sync_input_current_limit(self):
-        """Set the charger input current limit from the USB-C contract (PD) or Rp advertisement."""
+        """Set the charger input current limit from the USB-C source.
+
+        Uses the PD contract current, or the Type-C Rp advertisement when there is no contract
+        (3.0 A, 1.5 A, otherwise 0.5 A). Called automatically by
+        [`poll()`][ups_hat.board.UPS.poll] whenever the contract changes.
+
+        Returns:
+            The limit set (A), or `None` if the USB-C controller could not be read.
+
+        Raises:
+            DeviceNotFound: The charger is not answering.
+        """
         c = self._need_charger()
         limit = None
         if self.pd is not None:
@@ -247,24 +363,68 @@ class UPS:
     # ---- charging --------------------------------------------------------------------
     @property
     def charging_enabled(self):
+        """Whether the charger is allowed to charge (read from the chip).
+
+        Raises:
+            DeviceNotFound: The charger is not answering.
+        """
         return self._need_charger().charge_enabled
 
     def enable_charging(self, on=True):
+        """Allow or stop charging.
+
+        While a wiring fault holds charging off (`protect=True`), the request is remembered and
+        applied once the fault clears.
+
+        Args:
+            on: `True` to allow charging, `False` to stop it.
+
+        Raises:
+            DeviceNotFound: The charger is not answering.
+        """
         self._charging_wanted = bool(on)
         if not self._charge_disabled_by_protect:
             self._need_charger().charge_enabled = self._charging_wanted
 
     def set_charge_voltage(self, volts):
-        """Pack charge voltage, 7.0-8.4 V."""
+        """Set the pack charge voltage.
+
+        Also moves the battery model's 100 % point to match.
+
+        Args:
+            volts: Pack voltage (V), clamped to 7.0–8.4 V.
+
+        Raises:
+            DeviceNotFound: The charger is not answering.
+        """
         self.target_charge_voltage = clamp(volts, *CHARGE_VOLTAGE_RANGE)
         self._need_charger().charge_voltage = self.target_charge_voltage
         self.battery.full_cell_voltage = self.target_charge_voltage / 2
 
     def set_charge_current(self, amps):
+        """Set the charge current.
+
+        Args:
+            amps: Current (A), clamped to 0.1–3.0 A.
+
+        Raises:
+            DeviceNotFound: The charger is not answering.
+        """
         self.target_charge_current = clamp(amps, 0.1, CHARGE_CURRENT_MAX)
         self._need_charger().charge_current = self.target_charge_current
 
     def set_input_current_limit(self, amps):
+        """Set the USB-C input current limit.
+
+        The next change of PD contract overwrites it (see
+        [`sync_input_current_limit()`][ups_hat.board.UPS.sync_input_current_limit]).
+
+        Args:
+            amps: Current (A), clamped to 0.1–3.0 A.
+
+        Raises:
+            DeviceNotFound: The charger is not answering.
+        """
         self._need_charger().input_current_limit = clamp(amps, 0.1, INPUT_CURRENT_MAX)
 
     # ---- power control ---------------------------------------------------------------
@@ -276,30 +436,72 @@ class UPS:
         return c
 
     def ship_mode(self, delay=False):
-        """Disconnect the battery. Wakes on QON (SW1) or when an adapter is plugged in.
-        Ignored by the charger while an adapter is connected."""
+        """Disconnect the battery (ship mode).
+
+        The board wakes when SW1 is pressed or an adapter is plugged in. The charger ignores
+        this request while an adapter is connected. Saves the state file first.
+
+        Args:
+            delay: Wait about 10 s before disconnecting (TI's built-in delay).
+
+        Raises:
+            NotSupported: The board has no ship FET (`ship_fet=False`).
+            DeviceNotFound: The charger is not answering.
+        """
         self._save_state(clean=True)
         self._need_ship_fet().set_ship_fet_control(bq.SDRV_SHIP, delay)
 
     def shutdown_mode(self, delay=False):
-        """Lowest-drain off state. Wakes only when an adapter is plugged in (not on SW1)."""
+        """Enter the lowest-drain off state.
+
+        Only plugging in an adapter wakes the board; SW1 does not. Saves the state file first.
+
+        Args:
+            delay: Wait about 10 s before switching off.
+
+        Raises:
+            NotSupported: The board has no ship FET (`ship_fet=False`).
+            DeviceNotFound: The charger is not answering.
+        """
         self._save_state(clean=True)
         self._need_ship_fet().set_ship_fet_control(bq.SDRV_SHUTDOWN, delay)
 
     def system_reset(self, delay=False):
-        """Briefly cut and restore power to the Pi (power cycle)."""
+        """Briefly cut and restore power to the Pi (power cycle).
+
+        Saves the state file first.
+
+        Args:
+            delay: Wait about 10 s before the power cycle.
+
+        Raises:
+            NotSupported: The board has no ship FET (`ship_fet=False`).
+            DeviceNotFound: The charger is not answering.
+        """
         self._save_state(clean=True)
         self._need_ship_fet().set_ship_fet_control(bq.SDRV_SYSTEM_RESET, delay)
 
     def power_off(self, low_battery=None):
-        """Final step of a Pi shutdown (call from systemd-shutdown on poweroff/halt).
+        """Final step of a Pi shutdown.
 
-        - No adapter: ship mode, the board goes dark.
-        - Adapter present and this was a low-battery shutdown: system reset, so the Pi
-          boots again on mains instead of sitting halted.
-        - Adapter present otherwise: nothing (the Pi halts; the board stays on).
+        Call from the systemd-shutdown hook on power-off or halt, never on reboot.
 
-        Returns "ship", "reset" or "none".
+        | Situation | Action | Returns |
+        |---|---|---|
+        | No adapter | Ship mode: the board goes dark. | `"ship"` |
+        | Adapter, low-battery shutdown | System reset, so the Pi boots on mains. | `"reset"` |
+        | Adapter, user shutdown | Nothing: the Pi halts, the board stays on. | `"none"` |
+
+        Args:
+            low_battery: This is a low-battery shutdown. `None` uses what the last
+                [`poll()`][ups_hat.board.UPS.poll] found.
+
+        Returns:
+            `"ship"`, `"reset"` or `"none"`.
+
+        Raises:
+            NotSupported: Ship mode or reset is needed but the board has no ship FET.
+            DeviceNotFound: The charger is not answering.
         """
         if low_battery is None:
             low_battery = self._low_battery_shutdown
@@ -316,17 +518,37 @@ class UPS:
 
     # ---- USB-C PD --------------------------------------------------------------------
     def renegotiate_pd(self):
+        """Send a USB PD soft reset so the adapter re-offers its voltages.
+
+        Raises:
+            DeviceNotFound: The USB-C controller is not answering.
+        """
         self._need_pd().renegotiate()
 
     def pd_config(self):
-        """Sink PDOs in use (RAM) and stored in NVM."""
+        """Read the USB PD sink profiles in use and in NVM.
+
+        Returns:
+            `{"ram_count": n, "ram": [(volts, amps), ...], "nvm_count": n, "nvm": [...]}`.
+
+        Raises:
+            DeviceNotFound: The USB-C controller is not answering.
+        """
         pd = self._need_pd()
         ram = [(p.voltage, p.current) for p in pd.sink_pdos()]
         n, nvm = STUSB4500.decode_nvm_pdos(pd.read_nvm())
         return {"ram_count": pd.pdo_count, "ram": ram, "nvm_count": n, "nvm": nvm[:n]}
 
     def check_pd_config(self):
-        """True when the sink PDOs match the factory configuration."""
+        """Compare the sink profiles in use with the factory set.
+
+        Returns:
+            `True` when they match [`FACTORY_PDOS`][ups_hat.board.FACTORY_PDOS] within 60 mV
+            and 60 mA.
+
+        Raises:
+            DeviceNotFound: The USB-C controller is not answering.
+        """
         pd = self._need_pd()
         pdos = pd.sink_pdos()
         if len(pdos) != len(FACTORY_PDOS):
@@ -337,8 +559,16 @@ class UPS:
         return True
 
     def restore_pd_defaults(self, write_nvm=False):
-        """Load the factory PDOs into RAM and renegotiate. write_nvm=True also reprograms the
-        NVM (factory/service use; limited write endurance)."""
+        """Reload the factory sink profiles and renegotiate.
+
+        Args:
+            write_nvm: Also reprogram the NVM. Factory or service use only: the NVM has
+                limited write endurance.
+
+        Raises:
+            DeviceNotFound: The USB-C controller is not answering.
+            UPSError: The NVM operation timed out.
+        """
         pd = self._need_pd()
         for i, (v, a) in enumerate(FACTORY_PDOS):
             pd.set_sink_pdo(i + 1, v, a)
@@ -350,17 +580,35 @@ class UPS:
 
     # ---- callbacks -------------------------------------------------------------------
     def on_fault(self, fn):
-        """Call fn(fault) when a fault becomes active (or a transient one is seen)."""
+        """Register a callback for new faults. Usable as a decorator.
+
+        The callback runs inside [`poll()`][ups_hat.board.UPS.poll] when a fault becomes active,
+        or when a transient fault is seen.
+
+        Args:
+            fn: Function taking one [`Fault`][ups_hat.faults.Fault].
+
+        Returns:
+            `fn`, unchanged.
+        """
         self._callbacks.append(fn)
         return fn
 
     def on_clear(self, fn):
-        """Call fn(fault) when an active fault clears."""
+        """Register a callback for cleared faults. Usable as a decorator.
+
+        Args:
+            fn: Function taking one [`Fault`][ups_hat.faults.Fault].
+
+        Returns:
+            `fn`, unchanged.
+        """
         self._clear_callbacks.append(fn)
         return fn
 
     @property
     def faults(self):
+        """Faults active after the last poll (transient faults are not included)."""
         return list(self._active.values())
 
     # ---- polling ---------------------------------------------------------------------
@@ -376,8 +624,19 @@ class UPS:
         return t - first >= seconds
 
     def poll(self):
-        """Read everything, update the battery model, diagnose, and return a :class:`Snapshot`.
-        Call every 1-5 s."""
+        """Read everything, update the battery model and diagnose.
+
+        Call every 1–5 s. Each call reads the charger ADC, status, faults and latched flags and
+        the USB-C status; updates the battery model; re-applies the charger settings if the
+        charger has reset; evaluates every fault rule; fires the callbacks; and saves the state
+        file at most every 5 minutes.
+
+        A chip that does not answer is reported as a fault (`BUS_CHARGER_MISSING` or
+        `BUS_PD_MISSING`) rather than raised.
+
+        Returns:
+            The new snapshot.
+        """
         t = now_s()
         s = Snapshot()
         s.time = t
@@ -706,7 +965,13 @@ class UPS:
 
     # ---- monitoring loop -------------------------------------------------------------
     def run(self, interval_s=2.0, callback=None, count=None):
-        """Poll forever (or `count` times), calling callback(snapshot) each time."""
+        """Poll repeatedly.
+
+        Args:
+            interval_s: Seconds between polls.
+            callback: Called with each [`Snapshot`][ups_hat.board.Snapshot].
+            count: Number of polls; `None` runs forever.
+        """
         n = 0
         while count is None or n < count:
             s = self.poll()
@@ -757,13 +1022,23 @@ class UPS:
         self._last_save = now_s()
 
     def save_state(self, clean=False):
-        """Write learned battery data to state_file. Pass clean=True when the Pi is shutting
-        down normally, so the next start does not report BAT_EARLY_CUTOFF."""
+        """Write the learned battery data to the state file.
+
+        Does nothing if no `state_file` was given.
+
+        Args:
+            clean: The Pi is shutting down normally, so the next start does not report
+                `BAT_EARLY_CUTOFF`.
+        """
         self._save_state(clean)
 
     def acknowledge(self, code):
-        """Clear a latched inferred fault (BAT_EARLY_CUTOFF, BAT_IMBALANCE_SUSPECTED,
-        BAT_SELF_DISCHARGE, CHG_RESET_DETECTED) after the user has dealt with it."""
+        """Clear a latched inferred fault after the user has dealt with it.
+
+        Args:
+            code: `"BAT_EARLY_CUTOFF"`, `"BAT_IMBALANCE_SUSPECTED"`, `"BAT_SELF_DISCHARGE"` or
+                `"CHG_RESET_DETECTED"`. Other codes are ignored.
+        """
         self._boot_events = [e for e in self._boot_events if e[0] != code]
         if code == "BAT_IMBALANCE_SUSPECTED":
             self._charge_stop_events = 0
@@ -773,7 +1048,10 @@ class UPS:
             self._reset_detected_at = None
 
     def new_cells_fitted(self):
-        """Call after replacing the cells: forget learned capacity, resistance and history."""
+        """Forget learned capacity, resistance and history after fitting new cells.
+
+        The state of charge is re-estimated from the voltage on the next poll.
+        """
         self.battery.reset_learning()
         self.battery.soc = None
         self.battery.anchored = False
@@ -784,7 +1062,15 @@ class UPS:
 
     # ---- reporting -------------------------------------------------------------------
     def report(self, s=None):
-        """Human-readable multi-line status."""
+        """Build a human-readable status report.
+
+        Args:
+            s: Snapshot to report. `None` polls first.
+
+        Returns:
+            Several lines of text: power source, input, battery, rails, temperature, capacity
+            and faults with advice.
+        """
         s = s or self.poll()
         L = []
         if not s.charger_ok:

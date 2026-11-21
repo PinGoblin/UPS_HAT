@@ -1,0 +1,79 @@
+site_name: UPS HAT+ software
+site_description: Python and MicroPython library for the UPS HAT+ for Raspberry Pi
+repo_url: https://github.com/PinGoblin/ups_hat
+repo_name: PinGoblin/ups_hat
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2026 PinGoblin. MIT licence.
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Light mode
+
+nav:
+  - Home: index.md
+  - Guide:
+      - Installation: guide/install.md
+      - Concepts: guide/concepts.md
+      - Power-off integration: guide/power-off.md
+      - MicroPython notes: guide/micropython.md
+      - Safety, limits and testing: guide/safety.md
+  - Fault codes: faults.md
+  - API reference:
+      - UPS and Snapshot: api/ups.md
+      - BQ25798 charger: api/bq25798.md
+      - STUSB4500 USB-C PD: api/stusb4500.md
+      - Battery model: api/battery.md
+      - Faults: api/faults.md
+      - I²C bus and errors: api/bus.md
+      - Pi 5 supply monitor: api/pimon.md
+      - Command-line tool: api/cli.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            docstring_section_style: table
+            merge_init_into_class: true
+            show_signature_annotations: true
+            separate_signature: true
+            signature_crossrefs: true
+            show_source: false
+            show_root_heading: false
+            show_root_toc_entry: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            filters: ["!^_"]
+            heading_level: 2

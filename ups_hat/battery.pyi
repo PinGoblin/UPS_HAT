@@ -1,0 +1,46 @@
+from typing import Any, Dict, Optional, Tuple
+
+OCV_TABLE: Tuple[float, ...]
+
+def soc_from_ocv(cell_v: float) -> float: ...
+
+class BatteryMonitor:
+    REST_CURRENT: float
+    REST_TIME: float
+    IR_STEP: float
+    IR_MAX_DT: float
+    series: int
+    parallel: int
+    cell_capacity_mah: float
+    full_cell_voltage: float
+    soc: Optional[float]
+    remaining_mah: Optional[float]
+    learned_capacity_mah: Optional[float]
+    resistance: Optional[float]
+    resistance_baseline: Optional[float]
+    cycle_mah: float
+    anchored: bool
+    def __init__(
+        self,
+        series: int = 2,
+        parallel: int = 1,
+        cell_capacity_mah: float = 3000.0,
+        full_cell_voltage: float = 4.10,
+    ) -> None: ...
+    @property
+    def nominal_capacity_mah(self) -> float: ...
+    @property
+    def capacity_mah(self) -> float: ...
+    @property
+    def cycles(self) -> float: ...
+    def soc_from_voltage(self, pack_v: float) -> float: ...
+    def update(
+        self, t: float, vbat: float, ibat: float, charge_done: bool = False, present: bool = True
+    ) -> None: ...
+    def _ocv_correct(self, vbat: float) -> None: ...
+    def _add_ir(self, r: float) -> None: ...
+    def reset_learning(self) -> None: ...
+    def time_to_empty_h(self, ibat: float) -> Optional[float]: ...
+    def time_to_full_h(self, ibat: float) -> Optional[float]: ...
+    def to_dict(self) -> Dict[str, Any]: ...
+    def from_dict(self, d: Dict[str, Any], restore_soc: bool = True) -> None: ...

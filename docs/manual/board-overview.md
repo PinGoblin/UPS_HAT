@@ -4,7 +4,7 @@ Power flows in one direction: USB-C input → charger → system rail (shared wi
 
 ![UPS HAT+ top view with labelled connectors, controls and key components](images/ups-hat-top.png)
 
-*Top view from an earlier placement plan. On production boards the battery connector J3 is a vertical XT30 at the bottom edge, and the protection parts shown near the old terminal are on the pack board instead.*
+*Top view of the Rev D board (Ver 1.4), rendered from the production Gerber files. The 40-pin header J2 is fitted underneath; only its pins show on top. The battery protection is on the UPS Pack board, not on the HAT.*
 
 **Connectors, controls and indicators**
 
@@ -13,10 +13,10 @@ Power flows in one direction: USB-C input → charger → system rail (shared wi
 | J1 | USB-C input | Connect a USB-C power adapter here. Power only, no data. |
 | J2 | 40-pin header | Connects to the Raspberry Pi. Supplies 5.1 V and carries I²C. |
 | J3 | Battery connector (XT30, male) | Takes the pack's XT30 plug: pad 1 GND (−), pad 2 battery +. |
-| SW1 | Power button | Short press: wakes the board from its off (ship) state. Long press (about 15 s): resets power to the Pi. |
-| D2 | Green LED, CHG | On: charging. Off: charge complete or no input. Blinking: charge fault. |
-| D3 | Green LED, 5V | On: 5.1 V output to the Pi is active. |
-| TP1–TP7 | Test pads | For service measurements: VBUS, PMID, SYS, BAT, 5V OUT, GND, EEPROM WP. |
+| SW1 | Power button (marked QON) | Short press: wakes the board from its off (ship) state. Long press (about 15 s): resets power to the Pi. |
+| D2 | Green LED (marked CHG) | On: charging. Off: charge complete or no input. Blinking: charge fault. |
+| D3 | Green LED (marked PWR) | On: 5.1 V output to the Pi is active. |
+| VBUS, PMID, SYS, BAT, 5V1, GND, EE_WP | Test pads | For service measurements, each marked with its signal: USB-C input, charger input, system rail, battery, 5.1 V output, ground and EEPROM write-protect. |
 
 **Battery connector J3 (XT30)**
 

@@ -4,11 +4,11 @@ The board has no on-board processor. The Raspberry Pi reads the board over I²C 
 
 | State | What happens | LEDs |
 | --- | --- | --- |
-| Mains power | Adapter powers the Pi and charges the battery. | 5V on; CHG on while charging |
-| Battery power | Battery powers the Pi with no interruption. | 5V on; CHG off |
-| Low battery | The ups-hat service shuts the Pi down at 5 % remaining. | 5V on until shutdown completes |
+| Mains power | Adapter powers the Pi and charges the battery. | PWR on; CHG on while charging |
+| Battery power | Battery powers the Pi with no interruption. | PWR on; CHG off |
+| Low battery | The ups-hat service shuts the Pi down at 5 % remaining. | PWR on until shutdown completes |
 | Off (ship mode) | After a shutdown on battery, the board disconnects the battery. Standby drain is a few microamps. | All off |
-| Hardware cut-off | If no software acts, the output switches off at about 5.6 V pack voltage. | 5V off |
+| Hardware cut-off | If no software acts, the output switches off at about 5.6 V pack voltage. | PWR off |
 
 **Turning on:** plug in the USB-C adapter, or press SW1 briefly to start from battery.
 

@@ -4,9 +4,9 @@ The UPS HAT+ keeps a Raspberry Pi running from a 2-cell (2S) lithium-ion battery
 
 This manual covers the UPS HAT+ hardware revision D and its battery, the UPS Pack board Rev B (DUAL or QUAD). Read the [safety section](safety.md) before connecting a battery.
 
-![UPS HAT+ Rev D, 3D view on M2.5 standoffs](images/ups-hat-3d.png)
+![UPS HAT+ Rev D (Ver 1.4), angled view of the top side](images/ups-hat-3d.png)
 
-*UPS HAT+ Rev D on standoffs. Preliminary render from an earlier placement plan: it still shows the old 4-way battery terminal. Production boards have the XT30 battery connector J3 at the bottom edge.*
+*UPS HAT+ Rev D (board marking Ver 1.4). The USB-C input is on the left edge, the 40-pin header's pins come through along the top edge, and the yellow XT30 battery connector J3 is at the bottom edge. Rendered from the production Gerber files.*
 
 ## Contents
 

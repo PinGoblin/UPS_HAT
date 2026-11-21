@@ -1,4 +1,4 @@
-# ups_hat
+# PinGoblin UPS HAT+ Python / Micropython Library
 
 `ups_hat` gives software access to everything the UPS HAT+ can measure, control or report. The same code runs on a Raspberry Pi (CPython 3.7 or later) and on MicroPython boards, and needs no third-party packages.
 

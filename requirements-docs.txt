@@ -1,3 +1,5 @@
 mkdocs>=1.6,<2
 mkdocs-material>=9.5,<10
 mkdocstrings[python]>=0.26,<1
+# pymdown-extensions 13 changed its Highlight API, which mkdocstrings 0.x calls.
+pymdown-extensions>=10.0,<13

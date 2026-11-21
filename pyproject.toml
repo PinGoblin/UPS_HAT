@@ -15,3 +15,6 @@ ups-hat = "ups_hat.cli:main"
 
 [tool.setuptools]
 packages = ["ups_hat"]
+
+[tool.setuptools.package-data]
+ups_hat = ["py.typed", "*.pyi"]

@@ -1,12 +1,24 @@
-"""Command line tool (Raspberry Pi / CPython).
+"""Command-line tool (Raspberry Pi, CPython).
 
-    python3 -m ups_hat.cli status          one-off report
-    python3 -m ups_hat.cli watch [secs]    live report
-    python3 -m ups_hat.cli json            one snapshot as JSON
-    python3 -m ups_hat.cli faults          list every fault code the library can report
-    python3 -m ups_hat.cli registers       dump the charger registers
-    python3 -m ups_hat.cli pd              USB-C PD configuration and contract
-    python3 -m ups_hat.cli poweroff [low]  systemd-shutdown hook: ship mode / reset / nothing
+Installed as `ups-hat`; also runs as `python3 -m ups_hat.cli`.
+
+| Command | What it does |
+|---|---|
+| `status` | One-off report (the default). |
+| `watch [secs]` | Live report, refreshed every `secs` seconds (default 2). |
+| `json` | One snapshot as JSON. |
+| `faults` | List every fault code the library can report. |
+| `registers` | Dump the charger registers. |
+| `pd` | USB-C PD configuration and contract. |
+| `poweroff [low]` | systemd-shutdown hook: ship mode, reset or nothing. |
+
+Environment variables:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `UPS_HAT_CELLS_PARALLEL` | `1` | 1 = 2S1P, 2 = 2S2P. |
+| `UPS_HAT_CELL_MAH` | `3000` | Rated capacity of one cell. |
+| `UPS_HAT_STATE` | `/var/lib/ups-hat/state.json` | Learned battery data. |
 """
 
 import sys
@@ -30,6 +42,14 @@ def _ups(args):
 
 
 def main(argv=None):
+    """Run one command-line command.
+
+    Args:
+        argv: Arguments without the program name. Defaults to `sys.argv[1:]`.
+
+    Returns:
+        Exit status: 0 on success, 2 for an unknown command.
+    """
     argv = list(sys.argv[1:] if argv is None else argv)
     cmd = argv[0] if argv else "status"
     if cmd == "faults":

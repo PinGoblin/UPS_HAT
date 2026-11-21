@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Simulator tests
+        run: python3 tests/test_ups_hat.py
+      - name: Type stubs match the code
+        run: |
+          pip install mypy
+          python3 -m mypy.stubtest ups_hat --allowlist stubtest_allowlist.txt
+          python3 -m mypy ups_hat examples/pi_status.py examples/pi_daemon.py
+      - name: Fault code page is up to date
+        run: python3 tools/gen_faults_md.py --check
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-docs.txt
+      - name: Build documentation (warnings are errors)
+        run: mkdocs build --strict
+
+  deploy-docs:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test, docs]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-docs.txt
+      - name: Publish to the gh-pages branch
+        run: mkdocs gh-deploy --force

@@ -1,9 +1,10 @@
 """Battery state estimation for the 2S pack: state of charge, capacity and resistance.
 
-State of charge is counted from IBAT (coulomb counting), re-anchored to 100 %
-when the charger reports charge done and corrected from the open-circuit
-voltage after the pack has rested. 100 % means "full at the configured charge
-voltage" (8.20 V by default), so capacity figures are usable capacity.
+- State of charge is counted from IBAT (coulomb counting).
+- It is set to 100 % when the charger reports *charge done*, and corrected from the
+  open-circuit voltage after the pack has rested for 30 minutes.
+- 100 % means full at the configured charge voltage (8.20 V by default), so capacity
+  figures are usable capacity.
 """
 
 from ._compat import clamp
@@ -11,10 +12,19 @@ from ._compat import clamp
 # Typical NMC/NCA 18650 open-circuit voltage per cell (V) at 0..100 % in 5 % steps.
 OCV_TABLE = (3.27, 3.61, 3.69, 3.71, 3.73, 3.75, 3.77, 3.79, 3.80, 3.82, 3.84,
              3.85, 3.87, 3.91, 3.95, 3.98, 4.02, 4.08, 4.11, 4.15, 4.20)
+"""Typical NMC/NCA 18650 open-circuit voltage per cell (V) at 0 to 100 % state of charge, in 5 % steps."""
 
 
 def soc_from_ocv(cell_v):
-    """Percent of a 4.20 V-full cell from its resting voltage."""
+    """Estimate the state of charge of a rested cell from its voltage.
+
+    Args:
+        cell_v: Open-circuit voltage of one cell (V).
+
+    Returns:
+        Percent of a cell that is full at 4.20 V, 0 to 100, interpolated from
+        [`OCV_TABLE`][ups_hat.battery.OCV_TABLE].
+    """
     t = OCV_TABLE
     if cell_v <= t[0]:
         return 0.0
@@ -27,6 +37,27 @@ def soc_from_ocv(cell_v):
 
 
 class BatteryMonitor:
+    """State-of-charge, capacity and resistance model for the pack.
+
+    Usable on its own: feed it measurements with [`update()`][ups_hat.battery.BatteryMonitor.update].
+
+    Args:
+        series: Cells in series (2 on the UPS HAT+).
+        parallel: Cells in parallel: 1 = 2S1P, 2 = 2S2P.
+        cell_capacity_mah: Rated capacity of one cell (mAh).
+        full_cell_voltage: Cell voltage that counts as 100 % (V).
+
+    Attributes:
+        soc (float | None): State of charge (%), `None` until the first update.
+        remaining_mah (float | None): Remaining charge (mAh).
+        learned_capacity_mah (float | None): Capacity measured after a deep discharge from
+            full (mAh), or `None`.
+        resistance (float | None): Battery-path resistance (Ω), smoothed.
+        resistance_baseline (float | None): Median of the first 20 resistance samples (Ω).
+        cycle_mah (float): Total charge discharged (mAh), for cycle counting.
+        anchored (bool): The state of charge has a solid reference (full charge or a rested
+            voltage).
+    """
     REST_CURRENT = 0.05       # A, below this the pack is "resting"
     REST_TIME = 1800.0        # s of rest before trusting OCV
     IR_STEP = 0.3             # A, minimum current step for a resistance sample
@@ -52,26 +83,47 @@ class BatteryMonitor:
     # ---- derived ---------------------------------------------------------------------
     @property
     def nominal_capacity_mah(self):
-        """Rated capacity scaled to the configured full voltage."""
+        """Rated pack capacity (mAh), scaled to the configured full voltage."""
         frac = soc_from_ocv(self.full_cell_voltage) / 100.0
         return self.cell_capacity_mah * self.parallel * frac
 
     @property
     def capacity_mah(self):
+        """Pack capacity in use (mAh): the learned capacity if known, otherwise the rated one."""
         return self.learned_capacity_mah or self.nominal_capacity_mah
 
     @property
     def cycles(self):
+        """Equivalent full discharge cycles so far."""
         return self.cycle_mah / self.capacity_mah if self.capacity_mah else 0.0
 
     def soc_from_voltage(self, pack_v):
+        """Estimate the state of charge of the rested pack from its voltage.
+
+        Args:
+            pack_v: Open-circuit pack voltage (V).
+
+        Returns:
+            Percent of the configured full voltage, 0 to 100.
+        """
         cell = pack_v / self.series
         full = soc_from_ocv(self.full_cell_voltage)
         return clamp(soc_from_ocv(cell) / full * 100.0, 0.0, 100.0)
 
     # ---- updates ---------------------------------------------------------------------
     def update(self, t, vbat, ibat, charge_done=False, present=True):
-        """Feed one measurement. t in seconds (monotonic), ibat > 0 charging."""
+        """Feed one measurement.
+
+        Integrates the current, re-anchors at charge done, corrects from the resting voltage,
+        learns capacity after a deep discharge and samples resistance on load steps.
+
+        Args:
+            t: Monotonic time (s).
+            vbat: Pack voltage (V).
+            ibat: Pack current (A); positive = charging.
+            charge_done: The charger reports *charge done* with an adapter present.
+            present: A battery is connected. `False` skips the update.
+        """
         if not present:
             self._last = None
             return
@@ -136,7 +188,7 @@ class BatteryMonitor:
                 self._ir_samples = []
 
     def reset_learning(self):
-        """Forget learned capacity and resistance (call after fitting new cells)."""
+        """Forget the learned capacity, resistance and cycle count (call after fitting new cells)."""
         self.learned_capacity_mah = None
         self.resistance = None
         self.resistance_baseline = None
@@ -144,23 +196,53 @@ class BatteryMonitor:
         self.cycle_mah = 0.0
 
     def time_to_empty_h(self, ibat):
+        """Estimate the time to empty at a given discharge current.
+
+        Args:
+            ibat: Pack current (A); negative = discharging.
+
+        Returns:
+            Hours, or `None` when not discharging (above −20 mA) or not yet known.
+        """
         if ibat >= -0.02 or self.remaining_mah is None:
             return None
         return self.remaining_mah / (-ibat * 1000.0)
 
     def time_to_full_h(self, ibat):
+        """Estimate the time to full at a given charge current.
+
+        Adds 15 % for the constant-voltage tail.
+
+        Args:
+            ibat: Pack current (A); positive = charging.
+
+        Returns:
+            Hours, or `None` when not charging (below 20 mA) or not yet known.
+        """
         if ibat <= 0.02 or self.remaining_mah is None:
             return None
         return (self.capacity_mah - self.remaining_mah) / (ibat * 1000.0) * 1.15  # CV tail
 
     # ---- persistence -----------------------------------------------------------------
     def to_dict(self):
+        """Convert the learned state to a JSON-serialisable dictionary.
+
+        Returns:
+            State of charge, remaining charge, anchoring, learned capacity, resistance, cycle
+            count and discharge since full.
+        """
         return {"soc": self.soc, "remaining_mah": self.remaining_mah, "anchored": self.anchored,
                 "learned_capacity_mah": self.learned_capacity_mah, "resistance": self.resistance,
                 "resistance_baseline": self.resistance_baseline, "cycle_mah": self.cycle_mah,
                 "discharged_since_full": self._discharged_since_full}
 
     def from_dict(self, d, restore_soc=True):
+        """Restore state saved by [`to_dict()`][ups_hat.battery.BatteryMonitor.to_dict].
+
+        Args:
+            d: Saved state.
+            restore_soc: Also restore the state of charge.
+        """
         self.learned_capacity_mah = d.get("learned_capacity_mah")
         self.resistance = d.get("resistance")
         self.resistance_baseline = d.get("resistance_baseline")

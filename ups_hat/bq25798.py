@@ -1,13 +1,13 @@
-"""Driver for the TI BQ25798 buck-boost charger (U2, I2C address 0x6B).
+"""Driver for the TI BQ25798 buck-boost charger (U2, I²C address 0x6B).
 
-Register map: TI datasheet SLUSDV2. 16-bit registers are MSB first.
-Voltages in volts, currents in amps, temperatures in degC unless the
-name ends in ``_mv`` / ``_ma`` / ``_raw``.
+Register map: TI datasheet SLUSDV2. 16-bit registers are most significant byte first.
+Voltages are in volts, currents in amps and temperatures in °C unless the name ends in
+`_mv`, `_ma` or `_raw`.
 
-The UPS HAT+ does not use OTG (it would drive VBUS on a sink-only USB-C
-port), the ACFET/RBFET input switches or MPPT, so this driver deliberately
-offers no way to turn those on. TS has no NTC on Rev D (fixed 60 % divider);
-``ts_ignore`` is exposed for completeness and is not used by UPS.
+The UPS HAT+ does not use OTG (it would drive VBUS on a sink-only USB-C port), the
+ACFET/RBFET input switches or MPPT, so this driver deliberately offers no way to turn
+them on. TS has no NTC on Rev D (fixed 60 % divider); `ts_ignore` is exposed for
+completeness and is not used by [`UPS`][ups_hat.board.UPS].
 """
 
 from .bus import I2CDevice, DeviceNotFound
@@ -56,6 +56,7 @@ PART_NUMBER = const(3)  # REG48 PN[5:3] for BQ25798
 # Code tables
 CHG_STAT = ("not charging", "trickle charge", "pre-charge", "fast charge (CC)",
             "taper charge (CV)", "reserved", "top-off", "charge done")
+"""Charge state names, indexed by the 3-bit charge state code."""
 CHG_NOT_CHARGING = const(0)
 CHG_TRICKLE = const(1)
 CHG_PRECHARGE = const(2)
@@ -79,9 +80,13 @@ VBUS_STAT = {
 }
 ICO_STAT = ("disabled", "in progress", "maximum input current found", "reserved")
 SDRV_IDLE = const(0)
+"""`SDRV_CTRL` code: idle."""
 SDRV_SHUTDOWN = const(1)
+"""`SDRV_CTRL` code: shutdown mode (wakes only on adapter)."""
 SDRV_SHIP = const(2)
+"""`SDRV_CTRL` code: ship mode (wakes on SW1 or adapter)."""
 SDRV_SYSTEM_RESET = const(3)
+"""`SDRV_CTRL` code: system power reset."""
 WATCHDOG_S = (0, 0.5, 1, 2, 20, 40, 80, 160)
 CHG_TIMER_H = (5, 8, 12, 24)
 TOPOFF_MIN = (0, 15, 30, 45)
@@ -134,7 +139,24 @@ def _decode(regs, values):
 
 
 class ADCReading:
-    """One set of ADC results. Currents in A (IBAT > 0 = charging), voltages in V."""
+    """One set of ADC results, read in a single transfer.
+
+    Args:
+        raw: 22 bytes starting at register 0x31.
+
+    Attributes:
+        ibus (float): Input current (A).
+        ibat (float): Battery current (A); positive = charging.
+        vbus (float): Input voltage (V).
+        vac1 (float): VAC1 voltage (V).
+        vac2 (float): VAC2 voltage (V).
+        vbat (float): Battery voltage (V).
+        vsys (float): System rail voltage (V).
+        ts_pct (float): TS input as % of REGN.
+        tdie (float): Die temperature (°C).
+        dplus (float): D+ voltage (V).
+        dminus (float): D− voltage (V).
+    """
 
     def __init__(self, raw):
         def s16(i):
@@ -157,6 +179,7 @@ class ADCReading:
         self.dminus = u16(20) / 1000.0
 
     def to_dict(self):
+        """Convert to a dictionary of the eleven readings."""
         return {k: getattr(self, k) for k in
                 ("ibus", "ibat", "vbus", "vac1", "vac2", "vbat", "vsys", "ts_pct", "tdie", "dplus", "dminus")}
 
@@ -166,8 +189,23 @@ class ADCReading:
 
 
 class BQ25798:
-    """Register-level driver. Every writable setting the board can safely use is exposed
-    as a property; :meth:`field` / :meth:`set_field` give raw access to anything else."""
+    """Register-level driver for the BQ25798.
+
+    Every setting the board can safely use is a property; [`field()`][ups_hat.bq25798.BQ25798.field]
+    and [`set_field()`][ups_hat.bq25798.BQ25798.set_field] give raw access to anything else.
+    Setters clamp values to the chip's range and round to the nearest step.
+
+    All methods and properties raise [`BusError`][ups_hat.bus.BusError] if a transfer fails.
+
+    Args:
+        i2c: Bus object with `readfrom_mem()` and `writeto_mem()`.
+        address: 7-bit I²C address.
+        check: Check the part number in register 0x48.
+
+    Raises:
+        DeviceNotFound: `check` is true and the part number is not the BQ25798's.
+        BusError: The chip did not answer.
+    """
 
     def __init__(self, i2c, address=ADDRESS, check=True):
         self.dev = I2CDevice(i2c, address, "BQ25798")
@@ -178,27 +216,57 @@ class BQ25798:
 
     # ---- raw access ------------------------------------------------------------------
     def field(self, reg, shift, width, wide=False):
+        """Read a raw bit field.
+
+        Args:
+            reg: Register address (the high byte when `wide` is true).
+            shift: Position of the field's lowest bit.
+            width: Field width in bits.
+            wide: The field is in a 16-bit register pair.
+
+        Returns:
+            The field value.
+        """
         return self.dev.field(reg, shift, width, wide)
 
     def set_field(self, reg, shift, width, value, wide=False):
+        """Write a raw bit field, leaving the other bits unchanged.
+
+        Args:
+            reg: Register address (the high byte when `wide` is true).
+            shift: Position of the field's lowest bit.
+            width: Field width in bits.
+            value: New field value.
+            wide: The field is in a 16-bit register pair.
+        """
         self.dev.set_field(reg, shift, width, value, wide)
 
     def dump(self):
-        """All registers 0x00-0x48 as {address: value}."""
+        """Read every register, 0x00 to 0x48.
+
+        Returns:
+            `{address: value}`.
+        """
         data = self.dev.read(0x00, 0x49)
         return {i: data[i] for i in range(0x49)}
 
     def part_information(self):
+        """Read the part information register (0x48).
+
+        Returns:
+            `{"raw": value, "part_number": pn, "revision": rev}`; the BQ25798 is part number 3.
+        """
         v = self.dev.u8(REG_PART)
         return {"raw": v, "part_number": (v >> 3) & 7, "revision": v & 7}
 
     def reset_registers(self):
-        """REG_RST: return every register to its power-on default."""
+        """Return every register to its power-on default (`REG_RST`)."""
         self.dev.set_bit(REG_TERM, 6, True)
 
     # ---- voltage / current limits ----------------------------------------------------
     @property
     def min_system_voltage(self):
+        """Minimum system voltage, VSYSMIN (V): 2.5–16 V in 250 mV steps."""
         return (self.dev.field(REG_VSYSMIN, 0, 6) * 250 + 2500) / 1000.0
 
     @min_system_voltage.setter
@@ -208,6 +276,7 @@ class BQ25798:
 
     @property
     def charge_voltage(self):
+        """Battery charge voltage, VREG (V): 3.0–18.8 V in 10 mV steps."""
         return self.dev.field(REG_VREG, 0, 11, True) * 10 / 1000.0
 
     @charge_voltage.setter
@@ -216,6 +285,7 @@ class BQ25798:
 
     @property
     def charge_current(self):
+        """Fast-charge current, ICHG (A): 0.05–5 A in 10 mA steps."""
         return self.dev.field(REG_ICHG, 0, 9, True) * 10 / 1000.0
 
     @charge_current.setter
@@ -224,6 +294,7 @@ class BQ25798:
 
     @property
     def input_voltage_limit(self):
+        """Input voltage regulation limit, VINDPM (V): 3.6–22 V in 100 mV steps."""
         return self.dev.u8(REG_VINDPM) * 100 / 1000.0
 
     @input_voltage_limit.setter
@@ -232,6 +303,7 @@ class BQ25798:
 
     @property
     def input_current_limit(self):
+        """Input current limit, IINDPM (A): 0.1–3.3 A in 10 mA steps."""
         return self.dev.field(REG_IINDPM, 0, 9, True) * 10 / 1000.0
 
     @input_current_limit.setter
@@ -240,6 +312,7 @@ class BQ25798:
 
     @property
     def precharge_current(self):
+        """Pre-charge current (A): 0.04–2 A in 40 mA steps."""
         return self.dev.field(REG_PRECHG, 0, 6) * 40 / 1000.0
 
     @precharge_current.setter
@@ -248,7 +321,7 @@ class BQ25798:
 
     @property
     def precharge_threshold_pct(self):
-        """Pre-charge to fast-charge threshold as % of the charge voltage."""
+        """Pre-charge to fast-charge threshold, % of the charge voltage: 15, 62.2, 66.7 or 71.4."""
         return VBAT_LOWV_PCT[self.dev.field(REG_PRECHG, 6, 2)]
 
     @precharge_threshold_pct.setter
@@ -257,6 +330,7 @@ class BQ25798:
 
     @property
     def termination_current(self):
+        """Termination current (A): 0.04–1 A in 40 mA steps."""
         return self.dev.field(REG_TERM, 0, 5) * 40 / 1000.0
 
     @termination_current.setter
@@ -265,6 +339,7 @@ class BQ25798:
 
     @property
     def stop_charge_on_watchdog(self):
+        """Stop charging when the I²C watchdog expires."""
         return self.dev.bit(REG_TERM, 5)
 
     @stop_charge_on_watchdog.setter
@@ -273,11 +348,12 @@ class BQ25798:
 
     @property
     def cell_count(self):
-        """Series cells, set by the PROG resistor (2 on this board)."""
+        """Cells in series, set by the PROG resistor at power-up (2 on this board). Read only."""
         return self.dev.field(REG_RECHG, 6, 2) + 1
 
     @property
     def recharge_deglitch_ms(self):
+        """Recharge deglitch time (ms): 64, 256, 1024 or 2048."""
         return TRECHG_MS[self.dev.field(REG_RECHG, 4, 2)]
 
     @recharge_deglitch_ms.setter
@@ -286,7 +362,7 @@ class BQ25798:
 
     @property
     def recharge_offset(self):
-        """Recharge starts this far (V) below the charge voltage."""
+        """Recharge threshold below the charge voltage (V): 0.05–0.8 V in 50 mV steps."""
         return (self.dev.field(REG_RECHG, 0, 4) * 50 + 50) / 1000.0
 
     @recharge_offset.setter
@@ -295,13 +371,13 @@ class BQ25798:
 
     @property
     def ico_current_limit(self):
-        """Input current limit found by the ICO algorithm (read only)."""
+        """Input current limit found by the ICO algorithm (A). Read only."""
         return self.dev.field(REG_ICO_ILIM, 0, 9, True) * 10 / 1000.0
 
     # ---- timers ----------------------------------------------------------------------
     @property
     def precharge_timer_short(self):
-        """True = 0.5 h pre-charge timer, False = 2 h."""
+        """Pre-charge safety timer length: `True` = 0.5 h, `False` = 2 h."""
         return self.dev.bit(REG_IOTG, 7)
 
     @precharge_timer_short.setter
@@ -310,6 +386,7 @@ class BQ25798:
 
     @property
     def topoff_timer_min(self):
+        """Top-off timer after termination (minutes): 0, 15, 30 or 45."""
         return TOPOFF_MIN[self.dev.field(REG_TIMER, 6, 2)]
 
     @topoff_timer_min.setter
@@ -318,6 +395,7 @@ class BQ25798:
 
     @property
     def trickle_timer_enabled(self):
+        """Trickle-charge safety timer on."""
         return self.dev.bit(REG_TIMER, 5)
 
     @trickle_timer_enabled.setter
@@ -326,6 +404,7 @@ class BQ25798:
 
     @property
     def precharge_timer_enabled(self):
+        """Pre-charge safety timer on."""
         return self.dev.bit(REG_TIMER, 4)
 
     @precharge_timer_enabled.setter
@@ -334,6 +413,7 @@ class BQ25798:
 
     @property
     def charge_timer_enabled(self):
+        """Fast-charge safety timer on."""
         return self.dev.bit(REG_TIMER, 3)
 
     @charge_timer_enabled.setter
@@ -342,6 +422,7 @@ class BQ25798:
 
     @property
     def charge_timer_h(self):
+        """Fast-charge safety timer length (hours): 5, 8, 12 or 24."""
         return CHG_TIMER_H[self.dev.field(REG_TIMER, 1, 2)]
 
     @charge_timer_h.setter
@@ -350,7 +431,7 @@ class BQ25798:
 
     @property
     def timer_half_rate(self):
-        """Timers run at half speed during DPM / thermal regulation."""
+        """Safety timers run at half speed during input limiting or thermal regulation."""
         return self.dev.bit(REG_TIMER, 0)
 
     @timer_half_rate.setter
@@ -360,6 +441,7 @@ class BQ25798:
     # ---- charger control 0 -----------------------------------------------------------
     @property
     def auto_battery_discharge_on_ovp(self):
+        """Discharge the battery automatically on battery over-voltage."""
         return self.dev.bit(REG_CTRL0, 7)
 
     @auto_battery_discharge_on_ovp.setter
@@ -368,6 +450,7 @@ class BQ25798:
 
     @property
     def force_battery_discharge(self):
+        """Force a battery discharge current (about 30 mA)."""
         return self.dev.bit(REG_CTRL0, 6)
 
     @force_battery_discharge.setter
@@ -376,6 +459,7 @@ class BQ25798:
 
     @property
     def charge_enabled(self):
+        """Charging allowed (`EN_CHG`)."""
         return self.dev.bit(REG_CTRL0, 5)
 
     @charge_enabled.setter
@@ -384,6 +468,7 @@ class BQ25798:
 
     @property
     def ico_enabled(self):
+        """Input current optimiser (ICO) on."""
         return self.dev.bit(REG_CTRL0, 4)
 
     @ico_enabled.setter
@@ -391,11 +476,12 @@ class BQ25798:
         self.dev.set_bit(REG_CTRL0, 4, on)
 
     def force_ico(self):
-        """Restart input current optimisation (needs ico_enabled)."""
+        """Restart input current optimisation (needs `ico_enabled`)."""
         self.dev.set_bit(REG_CTRL0, 3, True)
 
     @property
     def hiz(self):
+        """High-impedance input mode: the charger draws nothing from the adapter."""
         return self.dev.bit(REG_CTRL0, 2)
 
     @hiz.setter
@@ -404,6 +490,7 @@ class BQ25798:
 
     @property
     def termination_enabled(self):
+        """Charge termination on."""
         return self.dev.bit(REG_CTRL0, 1)
 
     @termination_enabled.setter
@@ -413,6 +500,7 @@ class BQ25798:
     # ---- charger control 1 -----------------------------------------------------------
     @property
     def vac_ovp(self):
+        """VAC over-voltage threshold (V): 7, 12, 22 or 26."""
         return VAC_OVP_V[self.dev.field(REG_CTRL1, 4, 2)]
 
     @vac_ovp.setter
@@ -420,11 +508,12 @@ class BQ25798:
         self.dev.set_field(REG_CTRL1, 4, 2, _nearest(VAC_OVP_V, volts))
 
     def kick_watchdog(self):
+        """Reset the I²C watchdog timer."""
         self.dev.set_bit(REG_CTRL1, 3, True)
 
     @property
     def watchdog_s(self):
-        """I2C watchdog period in seconds, 0 = disabled."""
+        """I²C watchdog period (s): 0 (off), 0.5, 1, 2, 20, 40, 80 or 160."""
         return WATCHDOG_S[self.dev.field(REG_CTRL1, 0, 3)]
 
     @watchdog_s.setter
@@ -433,11 +522,12 @@ class BQ25798:
 
     # ---- charger control 2: input detection and ship FET -----------------------------
     def force_input_detection(self):
-        """Re-run D+/D- adapter detection."""
+        """Re-run D+/D− adapter detection."""
         self.dev.set_bit(REG_CTRL2, 7, True)
 
     @property
     def auto_input_detection(self):
+        """Run D+/D− adapter detection automatically when VBUS appears."""
         return self.dev.bit(REG_CTRL2, 6)
 
     @auto_input_detection.setter
@@ -446,18 +536,29 @@ class BQ25798:
 
     @property
     def hvdcp(self):
-        """(HVDCP_EN, EN_9V, EN_12V). The UPS HAT+ negotiates voltage with the STUSB4500, so leave off."""
+        """HVDCP settings as `(HVDCP_EN, EN_9V, EN_12V)`. Read only.
+
+        The UPS HAT+ negotiates voltage with the STUSB4500, so leave these off.
+        """
         v = self.dev.u8(REG_CTRL2)
         return (bool(v & 0x08), bool(v & 0x10), bool(v & 0x20))
 
     @property
     def ship_fet_control(self):
+        """`SDRV_CTRL` field: one of the `SDRV_*` codes. Read only; write with
+        [`set_ship_fet_control()`][ups_hat.bq25798.BQ25798.set_ship_fet_control].
+        """
         return self.dev.field(REG_CTRL2, 1, 2)
 
     def set_ship_fet_control(self, mode, delay=False):
-        """Write SDRV_CTRL (SDRV_IDLE/SHUTDOWN/SHIP/SYSTEM_RESET). delay=True adds TI's 10 s delay.
+        """Write the ship FET control field (`SDRV_CTRL`).
 
-        Needs sfet_present = True, otherwise the chip ignores it.
+        Needs [`sfet_present`][ups_hat.bq25798.BQ25798.sfet_present] set, otherwise the chip
+        ignores it.
+
+        Args:
+            mode: `SDRV_IDLE`, `SDRV_SHUTDOWN`, `SDRV_SHIP` or `SDRV_SYSTEM_RESET`.
+            delay: Add TI's 10 s delay before acting.
         """
         v = self.dev.u8(REG_CTRL2)
         v = (v & ~0x07) | ((mode & 3) << 1) | (0 if delay else 1)
@@ -466,6 +567,7 @@ class BQ25798:
     # ---- charger control 3 / 4 -------------------------------------------------------
     @property
     def pfm_forward_disabled(self):
+        """PFM (light-load pulse-frequency mode) off in forward mode."""
         return self.dev.bit(REG_CTRL3, 4)
 
     @pfm_forward_disabled.setter
@@ -474,7 +576,7 @@ class BQ25798:
 
     @property
     def ship_wakeup_short(self):
-        """True = QON wakes from ship mode after 15 ms, False = 1 s."""
+        """QON press that wakes from ship mode: `True` = 15 ms, `False` = 1 s."""
         return self.dev.bit(REG_CTRL3, 3)
 
     @ship_wakeup_short.setter
@@ -483,6 +585,7 @@ class BQ25798:
 
     @property
     def batfet_ldo_disabled(self):
+        """BATFET LDO mode off during pre-charge."""
         return self.dev.bit(REG_CTRL3, 2)
 
     @batfet_ldo_disabled.setter
@@ -491,6 +594,7 @@ class BQ25798:
 
     @property
     def forward_ooa_disabled(self):
+        """Out-of-audio mode off in forward mode."""
         return self.dev.bit(REG_CTRL3, 0)
 
     @forward_ooa_disabled.setter
@@ -499,11 +603,12 @@ class BQ25798:
 
     @property
     def switching_frequency_khz(self):
-        """Set by the PROG resistor at power-up (750 kHz on this board)."""
+        """Converter switching frequency (kHz), set by the PROG resistor at power-up (750 on this board). Read only."""
         return 750 if self.dev.bit(REG_CTRL4, 5) else 1500
 
     @property
     def stat_pin_disabled(self):
+        """STAT pin output off."""
         return self.dev.bit(REG_CTRL4, 4)
 
     @stat_pin_disabled.setter
@@ -512,6 +617,7 @@ class BQ25798:
 
     @property
     def vsys_short_protection(self):
+        """VSYS short-circuit protection (hiccup mode) on."""
         return not self.dev.bit(REG_CTRL4, 3)
 
     @vsys_short_protection.setter
@@ -519,10 +625,12 @@ class BQ25798:
         self.dev.set_bit(REG_CTRL4, 3, not on)
 
     def force_vindpm_detection(self):
+        """Re-measure the adapter's open-circuit voltage to set VINDPM."""
         self.dev.set_bit(REG_CTRL4, 1, True)
 
     @property
     def ibus_ocp_enabled(self):
+        """Input over-current protection on."""
         return self.dev.bit(REG_CTRL4, 0)
 
     @ibus_ocp_enabled.setter
@@ -532,8 +640,11 @@ class BQ25798:
     # ---- charger control 5 -----------------------------------------------------------
     @property
     def sfet_present(self):
-        """Must be True for SDRV_CTRL (ship/shutdown/reset) and QON to work.
-        Returns to False whenever the chip loses all power."""
+        """A ship FET is fitted (`SFET_PRESENT`).
+
+        Must be `True` for `SDRV_CTRL` (ship, shutdown, reset) and QON to work. Returns to
+        `False` whenever the chip loses all power.
+        """
         return self.dev.bit(REG_CTRL5, 7)
 
     @sfet_present.setter
@@ -542,7 +653,7 @@ class BQ25798:
 
     @property
     def ibat_discharge_sensing(self):
-        """EN_IBAT: measure discharge current in battery-only mode (needed for IBAT on battery)."""
+        """Measure discharge current in battery-only mode (`EN_IBAT`). Needed for IBAT on battery."""
         return self.dev.bit(REG_CTRL5, 5)
 
     @ibat_discharge_sensing.setter
@@ -551,6 +662,7 @@ class BQ25798:
 
     @property
     def iindpm_enabled(self):
+        """Input current regulation (IINDPM) on."""
         return self.dev.bit(REG_CTRL5, 2)
 
     @iindpm_enabled.setter
@@ -559,6 +671,7 @@ class BQ25798:
 
     @property
     def ilim_pin_enabled(self):
+        """ILIM_HIZ pin current limit on."""
         return self.dev.bit(REG_CTRL5, 1)
 
     @ilim_pin_enabled.setter
@@ -567,7 +680,7 @@ class BQ25798:
 
     @property
     def battery_ocp_enabled(self):
-        """EN_BATOC: turn the ship FET off on battery discharge overcurrent (needs sfet_present)."""
+        """Turn the ship FET off on battery discharge over-current (`EN_BATOC`, needs `sfet_present`)."""
         return self.dev.bit(REG_CTRL5, 0)
 
     @battery_ocp_enabled.setter
@@ -577,6 +690,7 @@ class BQ25798:
     # ---- temperature control ---------------------------------------------------------
     @property
     def thermal_regulation_c(self):
+        """Die temperature at which charge current is reduced (°C): 60, 80, 100 or 120."""
         return TREG_C[self.dev.field(REG_TEMP, 6, 2)]
 
     @thermal_regulation_c.setter
@@ -585,6 +699,7 @@ class BQ25798:
 
     @property
     def thermal_shutdown_c(self):
+        """Die temperature at which the charger shuts down (°C): 85, 120, 130 or 150."""
         return TSHUT_C[self.dev.field(REG_TEMP, 4, 2)]
 
     @thermal_shutdown_c.setter
@@ -593,6 +708,7 @@ class BQ25798:
 
     @property
     def vbus_pulldown(self):
+        """VBUS pull-down resistor on."""
         return self.dev.bit(REG_TEMP, 3)
 
     @vbus_pulldown.setter
@@ -601,9 +717,13 @@ class BQ25798:
 
     @property
     def ts_ignore(self):
-        """TS_IGNORE (REG0x18 bit 0). True = the charger ignores the TS pin and charges
-        as if at room temperature (no JEITA, no cold/hot stop). Reset to False by power-on
-        reset, REG_RST and the I2C watchdog, so re-apply it after any charger reset."""
+        """Ignore the TS pin (`TS_IGNORE`, register 0x18 bit 0).
+
+        `True` makes the charger behave as if at room temperature: no JEITA limits and no
+        cold/hot stop. Reset to `False` by power-on reset, `REG_RST` and the I²C watchdog, so
+        re-apply it after any charger reset. Not used on Rev D, whose TS divider already reads
+        as normal temperature.
+        """
         return self.dev.bit(REG_NTC1, 0)
 
     @ts_ignore.setter
@@ -612,7 +732,14 @@ class BQ25798:
 
     # ---- status ----------------------------------------------------------------------
     def status(self):
-        """Live status: dict of booleans plus charge_state, vbus_type and ico_state."""
+        """Read the live status registers (0x1B to 0x1F).
+
+        Returns:
+            A dict of booleans named after the status bits (for example `POWER_GOOD`,
+            `VBUS_PRESENT`, `VBAT_PRESENT`, `TS_COLD`), plus `charge_state` and
+            `charge_state_text`, `vbus_type` and `vbus_type_text`, and `ico_state` and
+            `ico_state_text`.
+        """
         raw = self.dev.read(REG_STAT0, 5)
         out = _decode(STATUS_BITS, raw)
         cs = (raw[1] >> 5) & 7
@@ -627,16 +754,23 @@ class BQ25798:
         return out
 
     def faults(self):
-        """Names of fault conditions active right now."""
+        """Read the fault conditions active now (registers 0x20 and 0x21).
+
+        Returns:
+            Fault names, for example `["VBAT_OVP"]`.
+        """
         raw = self.dev.read(REG_FAULT0, 2)
         d = _decode(FAULT_BITS, raw)
         return [k for k in d if d[k]]
 
     def read_flags(self):
-        """Latched events since the last read (reading clears them).
+        """Read and clear the latched event flags (registers 0x22 to 0x27).
 
-        Returns {"charger": [names], "fault": [names]}. Call this every poll so short
-        events between polls are not missed (INT is not connected on this board).
+        Call on every poll so short events between polls are not missed: INT is not connected
+        on this board.
+
+        Returns:
+            `{"charger": [names], "fault": [names]}`.
         """
         raw = self.dev.read(REG_FLAG0, 6)
         ch = _decode(FLAG_BITS, raw[0:4])
@@ -645,6 +779,14 @@ class BQ25798:
 
     # ---- ADC -------------------------------------------------------------------------
     def adc_enable(self, on=True, continuous=True, bits=15, average=False):
+        """Configure and start the ADC.
+
+        Args:
+            on: ADC on.
+            continuous: Convert continuously; `False` takes one reading.
+            bits: Resolution: 12, 13, 14 or 15 (nearest is used).
+            average: Running average on.
+        """
         code = _nearest(ADC_BITS, bits)
         v = (0x80 if on else 0) | (0 if continuous else 0x40) | (code << 4) | (0x08 if average else 0) \
             | (0x04 if average else 0)
@@ -652,15 +794,20 @@ class BQ25798:
 
     @property
     def adc_enabled(self):
+        """ADC on."""
         return self.dev.bit(REG_ADC_CTRL, 7)
 
     @property
     def adc_disable_mask(self):
-        """(REG2F, REG30) raw channel-disable bits; 0 = all channels on."""
+        """Raw channel-disable bits as `(REG0x2F, REG0x30)`; `(0, 0)` = all channels on."""
         return (self.dev.u8(REG_ADC_DIS0), self.dev.u8(REG_ADC_DIS1))
 
     def read_adc(self):
-        """Read every ADC channel in one transfer."""
+        """Read every ADC channel in one transfer.
+
+        Returns:
+            The readings.
+        """
         return ADCReading(self.dev.read(REG_IBUS_ADC, 22))
 
 

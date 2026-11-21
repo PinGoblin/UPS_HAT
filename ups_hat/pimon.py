@@ -1,7 +1,12 @@
 """Raspberry Pi 5 supply monitoring through `vcgencmd` (Linux only).
 
-On MicroPython, or on a Pi without `vcgencmd`,
-[`PiPower.available`][ups_hat.pimon.PiPower] is `False` and every reading returns `None`.
+Utilises the `vcgencmd` linux command on a Raspberry Pi to enable Pi specific
+monitoring. This includes Pi-specific faults (PI_UNDERVOLTAGE, 
+PI_UNDERVOLTAGE_OCCURRED, OUTPUT_5V_FAULT, PI_EXTERNAL_SUPPLY) and the Pi's 
+5 V reading in snapshots. If utilised on a non-Raspberry Pi board 
+[`PiPower.available`][ups_hat.pimon.PiPower] will be `False` and every PiPower 
+attribute will return `None`. In this case, utilise the on-board monitoring 
+provided by the PinGoblin UPS HAT+ itself.
 """
 
 THROTTLE_BITS = (

@@ -1,4 +1,4 @@
-# Power-off integration on Raspberry Pi OS
+# Power-off integration on linux boards (e.g. Raspberry Pi)
 
 1. Install the library.
 2. Copy `examples/` to `/usr/local/lib/ups-hat/examples/`.

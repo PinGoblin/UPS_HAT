@@ -1,11 +1,9 @@
 # Fault codes
 
-Every fault the library can report, as listed in [`CATALOGUE`][ups_hat.faults.CATALOGUE]. Codes are stable: safe to log, match on or show to users.
+These fault codes are listed in [`CATALOGUE`][ups_hat.faults.CATALOGUE] and have the following attributes:
 
 - **Severity:** `info` needs no action, `warning` needs attention, `critical` needs action now.
-- **Source:** `charger` and `pd` faults are read from the chips; `bus` means a chip did not answer; `pi` comes from the Raspberry Pi 5 firmware; `inferred` faults are worked out from measurements over time and are a strong hint rather than proof. Most must persist for a few seconds to a few minutes before they are reported.
-
-The same list is printed by `ups-hat faults`.
+- **Source:** `charger` and `pd` faults are read from the chips; `bus` means a chip did not answer; `pi` comes from the Raspberry Pi 5 firmware; `inferred` faults are calculated indirectly from measurements over time. Most inferred faults are strong hints rather than proof of a fault, and must persist for a few seconds to a few minutes before they are reported.
 
 | Code | Severity | Source | Meaning | What to do |
 |---|---|---|---|---|

@@ -1,4 +1,4 @@
-"""High-level interface to the UPS HAT+ (Rev D and later).
+"""This module exposes a high-level interface to the UPS HAT+ (Rev D and later).
 
 [`UPS`][ups_hat.board.UPS] is the class most programs use. Each
 [`poll()`][ups_hat.board.UPS.poll] returns a [`Snapshot`][ups_hat.board.Snapshot].

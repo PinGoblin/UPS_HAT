@@ -9,7 +9,7 @@ Call [`poll()`][ups_hat.board.UPS.poll] every 1–5 s. Each call:
 - re-applies the charger settings if the charger has reset;
 - evaluates every fault rule and returns a [`Snapshot`][ups_hat.board.Snapshot].
 
-The charger's interrupt pin is not wired, so the library reads the latched flag registers on every poll. That way it still catches a fault that appeared and cleared between two polls. Such a fault is reported once, with `transient=True`.
+This library reads the chargers latched flag registers on every poll. Faults that appear briefly but are cleared between polls will be captured and reported once, with `transient=True`.
 
 ## Units
 
@@ -17,13 +17,13 @@ Volts, amps, watts, °C, mAh, percent and hours. For battery current, a positive
 
 ## State of charge
 
-- SoC is counted from the battery current.
+- SoC is calculated from the battery current.
 - It is set to 100 % when the charger reports *charge done*.
 - It is corrected from the resting voltage after 30 minutes with no load.
 - 100 % means full at the configured charge voltage (8.20 V by default), so capacities are usable capacities.
 - Capacity is learned automatically after a deep discharge from full.
-- Battery-path resistance is learned from load steps.
-- Give a `state_file` to keep what has been learned between runs.
+- Similarly, battery-path resistance is learned from load steps.
+- A `state_file` keeps what has been learned between runs.
 
 ## Fault sources
 
@@ -49,7 +49,7 @@ The library checks these every minute and re-applies them after a charger reset.
 
 ## Hardware cut-off
 
-If no software acts, the HAT's 5.1 V output switches off when the pack falls to about 5.6 V (2.8 V per cell) and back on above about 6.1 V. The library's own shutdown (5 % SoC or 6.2 V under load) comes first.
+If no software acts, the HAT's 5.1 V output switches off when the pack falls to about 5.6 V (2.8 V per cell) and back on above about 6.1 V. If running, the library's own shutdown will occur earlier as it is set to 5 % SoC or 6.2 V under load, whichever comes first.
 
 ## Low-level drivers
 

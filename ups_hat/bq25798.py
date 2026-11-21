@@ -1,4 +1,4 @@
-"""Driver for the TI BQ25798 buck-boost charger (U2, I²C address 0x6B).
+"""This module provides a low-level driver for the TI BQ25798 buck-boost charger (U2, I²C address 0x6B).
 
 Register map: TI datasheet SLUSDV2. 16-bit registers are most significant byte first.
 Voltages are in volts, currents in amps and temperatures in °C unless the name ends in

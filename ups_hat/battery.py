@@ -1,4 +1,4 @@
-"""Battery state estimation for the 2S pack: state of charge, capacity and resistance.
+"""This module exposes battery state: state of charge, capacity and resistance.
 
 - State of charge is counted from IBAT (coulomb counting).
 - It is set to 100 % when the charger reports *charge done*, and corrected from the

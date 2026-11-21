@@ -1,4 +1,4 @@
-"""Driver for the ST STUSB4500 USB-C PD sink controller (U1, I²C address 0x28).
+"""A low-level driver for the ST STUSB4500 USB-C PD sink controller (U1, I²C address 0x28).
 
 The register map and NVM sequence follow ST's public register map and reference
 software (github.com/usb-c/STUSB4500) and SparkFun's STUSB4500 library.

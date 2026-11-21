@@ -1,6 +1,6 @@
-"""I²C access and the library's exception classes.
+"""This module provides I²C access and exposes the library's exception classes.
 
-Any object with MicroPython's `machine.I2C` memory methods can carry the bus:
+Any object with MicroPython's `machine.I2C` memory methods can carry the I²C bus:
 
 ```python
 readfrom_mem(addr, reg, nbytes) -> bytes

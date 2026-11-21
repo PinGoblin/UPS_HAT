@@ -67,8 +67,8 @@ CATALOGUE = {
     "BAT_LOW": (WARNING, "inferred", "Battery low.", "Connect the adapter."),
     "BAT_CRITICAL": (CRITICAL, "inferred", "Battery critically low; shut down now.", "Connect the adapter."),
     "BAT_CHARGE_BLOCKED": (WARNING, "inferred", "Charging has stopped before the battery is full.",
-                           "The pack's protection has blocked charging: one cell reached 4.23 V (cells out of balance) "
-                           "or a cell reads 0 V. Check the cells in the pack."),
+                           "The pack's protection (HY2120) has blocked charging: one cell reached 4.25 V, so the cells "
+                           "are out of balance. Check the cells in the pack."),
     "BAT_IMBALANCE_SUSPECTED": (WARNING, "inferred", "Cells appear to be out of balance.",
                                 "Charging repeatedly stops early. Balancing will correct small differences over several "
                                 "charges; replace both cells with a matched pair if it persists."),

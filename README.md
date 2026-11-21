@@ -27,6 +27,7 @@ The USB-C adapter must offer USB PD at 9 V or 15 V, 3 A. A 5 V-only adapter runs
 - [Safety and limits](#safety-and-limits)
 - [Version 1.4.0](#version-140)
 - [Testing without hardware](#testing-without-hardware)
+- [Licence](#licence)
 
 ## Installation
 
@@ -229,7 +230,7 @@ A `Fault` object has the attributes `code`, `severity` (0 = info, 1 = warning, 2
 | `ADAPTER_INSUFFICIENT` | warning | inferred | Running partly from battery while the adapter is connected. | The adapter cannot carry the load. Use a USB-C PD adapter that offers 15 V at 3 A. |
 | `BAT_ABSENT` | critical | inferred | No battery detected. | Plug the pack's XT30 lead into J3, switch the pack ON and check its cells are fitted. A pack that is switched off, has tripped its protection or temperature cut-off, or has a blown fuse also reads as absent. |
 | `BAT_CAPACITY_LOW` | warning | inferred | Measured battery capacity is well below the rated capacity. | The cells are worn, or cell_capacity_mah is set too high. |
-| `BAT_CHARGE_BLOCKED` | warning | inferred | Charging has stopped before the battery is full. | The pack's protection has blocked charging: one cell reached 4.23 V (cells out of balance) or a cell reads 0 V. Check the cells in the pack. |
+| `BAT_CHARGE_BLOCKED` | warning | inferred | Charging has stopped before the battery is full. | The pack's protection (HY2120) has blocked charging: one cell reached 4.25 V, so the cells are out of balance. Check the cells in the pack. |
 | `BAT_CRITICAL` | critical | inferred | Battery critically low; shut down now. | Connect the adapter. |
 | `BAT_DEEPLY_DISCHARGED` | warning | inferred | Battery is below 6.0 V (deeply discharged). | Leave on the adapter; if it does not recover within an hour replace both cells. |
 | `BAT_EARLY_CUTOFF` | warning | inferred | Power was lost on battery while the pack still had charge. | One cell may be weak, or the load exceeded the pack's protection limit. Check the cells. |
@@ -348,3 +349,7 @@ The main class is `UPS` and the base error class is `UPSError`. Code written for
 python3 tests/test_ups_hat.py
 micropython tests/test_ups_hat.py
 ```
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).

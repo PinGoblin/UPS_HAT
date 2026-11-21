@@ -8,6 +8,7 @@ version = "1.4.0"
 description = "UPS HAT+ for Raspberry Pi: charger, USB-C PD and battery monitoring library (CPython and MicroPython)"
 readme = "README.md"
 requires-python = ">=3.7"
+license = {text = "MIT"}
 
 [project.scripts]
 ups-hat = "ups_hat.cli:main"

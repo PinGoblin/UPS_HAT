@@ -564,7 +564,7 @@ class UPS:
             elif s.soc is not None and s.soc <= 15:
                 found.append(("BAT_LOW", {"soc": s.soc}, False))
 
-        # charging blocked by the protector (U8 charge FET off) or an open contact
+        # charging blocked by the pack's HY2120 (charge FET off) or an open contact
         timers = s.status.get("CHARGE_TIMER_EXPIRED") or s.status.get("PRECHARGE_TIMER_EXPIRED") \
             or s.status.get("TRICKLE_TIMER_EXPIRED")
         blocked = (s.power_good and s.battery_present and self._charging_wanted
@@ -576,7 +576,7 @@ class UPS:
             if s.vbat > 7.6:
                 found.append(("BAT_IMBALANCE_SUSPECTED", {"vbat": s.vbat, "reason": "charging stopped near full"}, False))
 
-        # abrupt charge stop below full: one cell hit 4.23 V and the pack's protector opened its charge FET
+        # abrupt charge stop below full: one cell hit 4.25 V and the pack's HY2120 opened its charge FET
         p = self._prev
         if p is not None and p.charger_ok and p.charging and s.power_good:
             iterm = 0.2

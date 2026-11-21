@@ -1,0 +1,21 @@
+# Key features
+
+- 5.1 V, 5 A output to the Pi through the GPIO header, enough for a Raspberry Pi 5 under full load.
+- USB-C Power Delivery input. Negotiates 5 V, 9 V or 15 V at up to 3 A (45 W) from a USB-C PD adapter, so the board can run the Pi and charge the battery at the same time.
+- Seamless switchover. When input power is removed, the battery takes over with no interruption to the Pi.
+- Plug-in battery pack. The UPS Pack board holds two 18650 cells (DUAL, 2S1P) or four (QUAD, 2S2P) and plugs into the HAT's XT30 connector. Any 2S lithium-ion pack with its own protection and an XT30 plug also works.
+- Battery protection on the pack board, right at the cells:
+  - Per-cell over-charge protection at 4.23 V and over-discharge protection at 2.70 V.
+  - Over-current cut-off (8.3 A, short circuit 33 A) and a 10 A fuse.
+  - Temperature cut-off: the pack switches itself off above about 60 °C and back on below about 56 °C.
+  - Automatic balancing: a cell above 4.20 V is bled down, so the cells stay matched.
+  - An on/off switch for storage and transport, and no charging of a cell discharged to 0 V.
+- Long-life charging to 8.2 V (4.1 V per cell) once the software is installed, for roughly twice the cell life of charging to 4.2 V per cell. Charger safety timer and temperature regulation are built in.
+- Low-battery cut-off on the HAT at about 2.8 V per cell, so the cells are not deeply discharged even if the Pi's software is not running.
+- Ship mode. After a shutdown on battery, the HAT disconnects the battery and draws only microamps.
+- Output current limit of about 7–10 A in the HAT's 5.1 V converter, behind the pack's own over-current protection and fuse.
+- Not provided: a cold-charging limit. The pack cuts off when hot, but nothing stops charging below 0 °C, so keep the cells within the limits in the [safety section](safety.md).
+- Battery monitoring over I²C. Battery voltage, battery current (charge and discharge), input voltage and current, system voltage and charger status can all be read from the Pi.
+- Safe shutdown. The ups-hat software on the Pi shuts it down at 5 % remaining charge, then switches the board fully off to protect the battery. It installs from an APT repository and updates with the rest of Raspberry Pi OS.
+- Back-feed protection. The board's output cannot be driven backwards if a supply is also plugged into the Pi's own USB-C port.
+- On-board HAT+ ID EEPROM, so the Pi identifies the board and loads its settings automatically.

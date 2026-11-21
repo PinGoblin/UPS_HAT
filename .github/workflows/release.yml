@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: mp
-          key: micropython-${{ env.MP_VERSION }}-unix-v2
+          key: micropython-${{ env.MP_VERSION }}-unix-v3
       - name: Build MicroPython (unix port and mpy-cross)
         if: steps.mpcache.outputs.cache-hit != 'true'
         run: |

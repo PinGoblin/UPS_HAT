@@ -5,4 +5,9 @@ build/
 dist/
 ups_hat_test_state*.json
 site/
-venv/
+venv/.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.hypothesis/

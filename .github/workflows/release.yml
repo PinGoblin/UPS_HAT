@@ -35,8 +35,8 @@ jobs:
           make -C mp/ports/unix -j4 CFLAGS_EXTRA=-Wno-error
       - name: Tests under CPython and MicroPython
         run: |
-          python3 tests/test_ups_hat.py
-          mp/ports/unix/build-standard/micropython tests/test_ups_hat.py
+          python3 -m unittest discover -s tests
+          mp/ports/unix/build-standard/micropython tests/scenarios.py
       - name: Compile to .mpy
         run: tools/build_mpy.sh mp/mpy-cross/build/mpy-cross
       - name: Create the GitHub release

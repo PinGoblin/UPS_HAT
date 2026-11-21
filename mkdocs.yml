@@ -1,14 +1,16 @@
-site_name: UPS HAT+ software
-site_description: Python and MicroPython library for the UPS HAT+ for Raspberry Pi
-repo_url: https://github.com/PinGoblin/ups_hat
-repo_name: PinGoblin/ups_hat
+site_name: PinGoblin UPS HAT+
+site_description: User manual and Python / MicroPython library for the PinGoblin UPS HAT+ for Raspberry Pi
+repo_url: https://github.com/PinGoblin/UPS_HAT
+repo_name: PinGoblin/UPS_HAT
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2026 PinGoblin. MIT licence.
 
 theme:
   name: material
   features:
+    - navigation.tabs
     - navigation.sections
+    - navigation.indexes
     - navigation.top
     - content.code.copy
     - search.highlight
@@ -26,26 +28,48 @@ theme:
 
 nav:
   - Home: index.md
-  - Guide:
-      - Installation: guide/install.md
-      - Concepts: guide/concepts.md
-      - Power-off integration: guide/power-off.md
-      - MicroPython notes: guide/micropython.md
-      - Safety, limits and testing: guide/safety.md
-  - Fault codes: faults.md
-  - API reference:
-      - UPS and Snapshot: api/ups.md
-      - BQ25798 charger: api/bq25798.md
-      - STUSB4500 USB-C PD: api/stusb4500.md
-      - Battery model: api/battery.md
-      - Faults: api/faults.md
-      - I²C bus and errors: api/bus.md
-      - Pi 5 supply monitor: api/pimon.md
-      - Command-line tool: api/cli.md
+  - UPS HAT+ User Manual:
+      - manual/index.md
+      - Key features: manual/key-features.md
+      - Specifications: manual/specifications.md
+      - Compatibility: manual/compatibility.md
+      - Power sources: manual/power-sources.md
+      - What's in the box: manual/in-the-box.md
+      - Important safety information: manual/safety.md
+      - Board overview: manual/board-overview.md
+      - Battery requirements: manual/battery.md
+      - Installation: manual/installation.md
+      - Raspberry Pi configuration: manual/pi-configuration.md
+      - Operation: manual/operation.md
+      - Software: manual/software.md
+      - Troubleshooting: manual/troubleshooting.md
+      - Shipping, storage and disposal: manual/shipping-storage.md
+      - "Appendix A: Electrical characteristics": manual/appendix-a.md
+      - "Appendix B: UPS HAT+ technical information": manual/appendix-b.md
+      - "Appendix C: UPS Pack technical information": manual/appendix-c.md
+  - UPS HAT+ API:
+      - api/index.md
+      - Guide:
+          - Installation: api/guide/install.md
+          - Concepts: api/guide/concepts.md
+          - Power-off integration: api/guide/power-off.md
+          - MicroPython notes: api/guide/micropython.md
+          - Safety, limits and testing: api/guide/safety.md
+      - Fault codes: api/faults.md
+      - API reference:
+          - UPS and Snapshot: api/reference/ups.md
+          - BQ25798 charger: api/reference/bq25798.md
+          - STUSB4500 USB-C PD: api/reference/stusb4500.md
+          - Battery model: api/reference/battery.md
+          - Faults: api/reference/faults.md
+          - I²C bus and errors: api/reference/bus.md
+          - Pi 5 supply monitor: api/reference/pimon.md
+          - Command-line tool: api/reference/cli.md
 
 markdown_extensions:
   - admonition
   - attr_list
+  - md_in_html
   - tables
   - toc:
       permalink: true

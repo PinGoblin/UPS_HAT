@@ -13,7 +13,12 @@ The battery pack board (protector, balancer, fuse) and the HAT's 5.1 V converter
 
 The USB-C adapter must offer USB PD at 9 V or 15 V, 3 A. A 5 V-only adapter runs a lightly loaded Pi but is not supported; the library reports `PD_LOW_CONTRACT` or `PD_NO_CONTRACT`.
 
-Full documentation, including the API reference, is built with MkDocs from the `docs/` folder:
+The full documentation is published at <https://pingoblin.github.io/UPS_HAT/>. It has two sections:
+
+- **UPS HAT+ User Manual** (`docs/manual/`): the hardware manual for the board and the UPS Pack. This is the master copy of the manual.
+- **UPS HAT+ API** (`docs/api/`): this library's guide, fault codes and API reference.
+
+The site is built with MkDocs from the `docs/` folder:
 
 ```sh
 pip install -r requirements-docs.txt

@@ -33,7 +33,7 @@ def soc_from_ocv(cell_v):
     for i in range(1, len(t)):
         if cell_v <= t[i]:
             return (i - 1 + (cell_v - t[i - 1]) / (t[i] - t[i - 1])) * 5.0
-    return 100.0
+    return 100.0  # pragma: no cover  (unreachable: every voltage returns above)
 
 
 class BatteryMonitor:

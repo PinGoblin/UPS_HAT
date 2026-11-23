@@ -15,12 +15,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PI_ONLY = {"cli.py", "pimon.py"}
 
 
+def _read(*parts):
+    with open(os.path.join(ROOT, *parts)) as f:
+        return f.read()
+
+
 def main():
     errors = []
-    py = re.search(r'^version = "([^"]+)"', open(os.path.join(ROOT, "pyproject.toml")).read(), re.M).group(1)
-    init = re.search(r'^__version__ = "([^"]+)"', open(os.path.join(ROOT, "ups_hat", "__init__.py")).read(),
+    py = re.search(r'^version = "([^"]+)"', _read("pyproject.toml"), re.M).group(1)
+    init = re.search(r'^__version__ = "([^"]+)"', _read("ups_hat", "__init__.py"),
                      re.M).group(1)
-    pkg = json.load(open(os.path.join(ROOT, "micropython", "package.json")))
+    pkg = json.loads(_read("micropython", "package.json"))
     versions = {"pyproject.toml": py, "ups_hat/__init__.py": init, "micropython/package.json": pkg["version"]}
     if len(sys.argv) > 1:
         versions["git tag"] = sys.argv[1].lstrip("v")

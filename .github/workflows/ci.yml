@@ -10,14 +10,52 @@ permissions:
 
 jobs:
   test:
+    name: tests (CPython ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Oldest supported interpreter: standard library only, no test packages.
+          - {python: "3.8", os: ubuntu-22.04, tools: false}
+          - {python: "3.10", os: ubuntu-latest, tools: true}
+          - {python: "3.12", os: ubuntu-latest, tools: true}
+          - {python: "3.13", os: ubuntu-latest, tools: true}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Unit tests (unittest, standard library only)
+        if: ${{ !matrix.tools }}
+        run: python -W error -m unittest discover -s tests -v
+      - name: Install test tools (pytest, coverage, hypothesis)
+        if: ${{ matrix.tools }}
+        run: pip install -r requirements-test.txt
+      - name: Unit, scenario and property tests with branch coverage
+        if: ${{ matrix.tools }}
+        run: |
+          python -m coverage run -m pytest
+          python -m coverage report
+      - name: Coverage summary
+        if: ${{ matrix.tools && matrix.python == '3.12' }}
+        run: |
+          echo "## Test coverage (CPython ${{ matrix.python }})" >> "$GITHUB_STEP_SUMMARY"
+          python -m coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+          python -m coverage html
+      - uses: actions/upload-artifact@v4
+        if: ${{ matrix.tools && matrix.python == '3.12' }}
+        with:
+          name: coverage-html
+          path: htmlcov
+
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Simulator tests
-        run: python3 tests/test_ups_hat.py
       - name: Type stubs match the code
         run: |
           pip install mypy
@@ -55,7 +93,7 @@ jobs:
           sudo apt-get install -y gcc-multilib
           make -C mp/ports/unix -j4 MICROPY_FORCE_32BIT=1 MICROPY_PY_FFI=0 BUILD=build-32 CFLAGS_EXTRA=-Wno-error
       - name: Simulator tests under MicroPython
-        run: mp/ports/unix/build-standard/micropython tests/test_ups_hat.py
+        run: mp/ports/unix/build-standard/micropython tests/scenarios.py
       - name: Compile to .mpy
         run: tools/build_mpy.sh mp/mpy-cross/build/mpy-cross
       - name: Measure RAM use
@@ -96,7 +134,7 @@ jobs:
 
   deploy-docs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [test, docs]
+    needs: [test, checks, docs]
     runs-on: ubuntu-latest
     permissions:
       contents: write

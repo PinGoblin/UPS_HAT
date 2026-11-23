@@ -8,9 +8,4 @@
 
 ## Testing without hardware
 
-`tests/sim.py` simulates both chips at register level. Run the tests with either interpreter:
-
-```sh
-python3 tests/test_ups_hat.py
-micropython tests/test_ups_hat.py
-```
+`tests/sim.py` simulates both chips at register level. Run the full suite with `python -m pytest`, with no extra packages using `python -m unittest discover -s tests`, or run the end-to-end scenarios on MicroPython with `micropython tests/scenarios.py`. See [Testing](testing.md).

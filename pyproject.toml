@@ -18,3 +18,22 @@ packages = ["ups_hat"]
 
 [tool.setuptools.package-data]
 ups_hat = ["py.typed", "*.pyi"]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "coverage[toml]>=7.2", "hypothesis>=6"]
+
+# ---- tests: python -m pytest  (or, with no extra packages: python -m unittest discover -s tests)
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+branch = true
+source = ["ups_hat"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 95
+exclude_also = ['if __name__ == "__main__":']

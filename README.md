@@ -367,12 +367,15 @@ The main class is `UPS` and the base error class is `UPSError`. Code written for
 
 ## Testing without hardware
 
-`tests/sim.py` simulates both chips at register level. Run the tests with either interpreter:
+`tests/sim.py` simulates both chips at register level, so everything is tested without a board.
 
 ```sh
-python3 tests/test_ups_hat.py
-micropython tests/test_ups_hat.py
+pip install -r requirements-test.txt && python -m pytest   # full suite with Hypothesis
+python -m unittest discover -s tests                       # standard library only
+micropython tests/scenarios.py                             # end-to-end scenarios on MicroPython
 ```
+
+See the [Testing](https://pingoblin.github.io/UPS_HAT/api/guide/testing/) page for what each test file covers.
 
 ## Licence
 

@@ -1,7 +1,11 @@
-"""Scenario tests against the register simulators.
+"""End-to-end scenarios against the register simulators.
 
-    python3 tests/test_ups_hat.py
-    micropython tests/test_ups_hat.py
+Runs on CPython and MicroPython without any test framework:
+
+    python3 tests/scenarios.py
+    micropython tests/scenarios.py
+
+The unittest suite runs the same scenarios through tests/test_scenarios.py.
 """
 
 import sys
@@ -24,7 +28,6 @@ class Clock:
 
 
 CLOCK = Clock()
-board_mod.now_s = CLOCK
 
 
 def make(**kw):
@@ -393,6 +396,7 @@ def ts_divider_fixed_no_ntc():
 
 
 def main():
+    board_mod.now_s = CLOCK          # simulated time for every scenario
     failed = 0
     for t in TESTS:
         CLOCK.t = 1000.0

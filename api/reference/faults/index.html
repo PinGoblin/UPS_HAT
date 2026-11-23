@@ -1,0 +1,2643 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="User manual and Python / MicroPython library for the PinGoblin UPS HAT+ for Raspberry Pi">
+      
+      
+      
+      
+        <link rel="prev" href="../battery/">
+      
+      
+        <link rel="next" href="../bus/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
+    
+    
+      
+        <title>Faults - PinGoblin UPS HAT+</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#faults" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="PinGoblin UPS HAT+" class="md-header__button md-logo" aria-label="PinGoblin UPS HAT+" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PinGoblin UPS HAT+
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Faults
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/PinGoblin/UPS_HAT" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    PinGoblin/UPS_HAT
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../manual/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  UPS HAT+ User Manual
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  UPS HAT+ API
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="PinGoblin UPS HAT+" class="md-nav__button md-logo" aria-label="PinGoblin UPS HAT+" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PinGoblin UPS HAT+
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/PinGoblin/UPS_HAT" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    PinGoblin/UPS_HAT
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../manual/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UPS HAT+ User Manual
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    UPS HAT+ User Manual
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/key-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/specifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specifications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/power-sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Power sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/in-the-box/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What's in the box
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/safety/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Important safety information
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/board-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Board overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/battery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Battery requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/pi-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Raspberry Pi configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/software/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Software
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/shipping-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shipping, storage and disposal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/appendix-a/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Appendix A: Electrical characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/appendix-b/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Appendix B: UPS HAT+ technical information
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../manual/appendix-c/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Appendix C: UPS Pack technical information
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UPS HAT+ API
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    UPS HAT+ API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/power-off/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Power-off integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/micropython/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MicroPython notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/safety/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Safety and limits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faults/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fault codes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ups/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UPS and Snapshot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bq25798/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BQ25798 charger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stusb4500/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    STUSB4500 USB-C PD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../battery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Battery model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Faults
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Faults
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ups_hat.faults.INFO" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;INFO
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ups_hat.faults.WARNING" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;WARNING
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ups_hat.faults.CRITICAL" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;CRITICAL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ups_hat.faults.CATALOGUE" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;CATALOGUE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ups_hat.faults.Fault" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Fault
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" Fault">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ups_hat.faults.Fault.severity_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;severity_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ups_hat.faults.Fault.to_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I²C bus and errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pimon/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pi 5 supply monitor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command-line tool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ups_hat.faults.INFO" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;INFO
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ups_hat.faults.WARNING" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;WARNING
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ups_hat.faults.CRITICAL" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;CRITICAL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ups_hat.faults.CATALOGUE" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;CATALOGUE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ups_hat.faults.Fault" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Fault
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" Fault">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ups_hat.faults.Fault.severity_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;severity_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ups_hat.faults.Fault.to_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="faults">Faults<a class="headerlink" href="#faults" title="Permanent link">&para;</a></h1>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+
+    <div class="doc doc-contents first">
+
+        <p>Fault codes reported by <a class="autorefs autorefs-internal" title="            UPS" href="../ups/#ups_hat.board.UPS"><code>UPS</code></a>.</p>
+<p>Each fault has a stable string code (safe to log or match on), a severity, the source it
+came from, a one-line message and advice for the user. The full list is
+<a class="autorefs autorefs-internal" title="            CATALOGUE
+
+
+  
+      module-attribute
+  " href="#ups_hat.faults.CATALOGUE"><code>CATALOGUE</code></a>; the <a href="../../faults/">Fault codes</a> page shows it
+as a table.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>charger</code></td>
+<td>Read from BQ25798 registers.</td>
+</tr>
+<tr>
+<td><code>pd</code></td>
+<td>Read from STUSB4500 registers.</td>
+</tr>
+<tr>
+<td><code>bus</code></td>
+<td>An I²C device did not answer.</td>
+</tr>
+<tr>
+<td><code>inferred</code></td>
+<td>Worked out from measurements over time: a strong hint, not proof.</td>
+</tr>
+<tr>
+<td><code>pi</code></td>
+<td>Read from the Raspberry Pi 5 firmware (<code>vcgencmd</code>).</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="ups_hat.faults.INFO" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">INFO</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#ups_hat.faults.INFO" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">INFO</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">0</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Severity 0: information, no action needed.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="ups_hat.faults.WARNING" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">WARNING</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#ups_hat.faults.WARNING" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">WARNING</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">1</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Severity 1: needs attention.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="ups_hat.faults.CRITICAL" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">CRITICAL</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#ups_hat.faults.CRITICAL" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">CRITICAL</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">2</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Severity 2: needs action now.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="ups_hat.faults.CATALOGUE" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">CATALOGUE</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#ups_hat.faults.CATALOGUE" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">CATALOGUE</span><span class="p">:</span> <span class="n"><span title="typing.Dict">Dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Tuple">Tuple</span></span><span class="p">[</span><span class="n"><span title="int">int</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'BUS_CHARGER_MISSING'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'bus'</span><span class="p">,</span> <span class="s1">'Charger (BQ25798, 0x6B) is not answering on I2C.'</span><span class="p">,</span> <span class="s1">'Check that I2C is enabled and the HAT is seated. If it persists the charger may be damaged.'</span><span class="p">),</span> <span class="s1">'BUS_PD_MISSING'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'bus'</span><span class="p">,</span> <span class="s1">'USB-C controller (STUSB4500, 0x28) is not answering on I2C.'</span><span class="p">,</span> <span class="s1">'Power is unaffected but PD information is unavailable. Re-seat the HAT.'</span><span class="p">),</span> <span class="s1">'CHG_VBUS_OVP'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'USB-C input over-voltage.'</span><span class="p">,</span> <span class="s1">'Unplug the adapter; it is faulty or not USB-C PD compliant.'</span><span class="p">),</span> <span class="s1">'CHG_VAC_OVP'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Input (VAC) over-voltage.'</span><span class="p">,</span> <span class="s1">'Unplug the adapter; it is faulty or not USB-C PD compliant.'</span><span class="p">),</span> <span class="s1">'CHG_VBAT_OVP'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Battery over-voltage.'</span><span class="p">,</span> <span class="s1">'Check the cells are Li-ion 3.6/3.7 V types wired as 2S. Charging is stopped.'</span><span class="p">),</span> <span class="s1">'CHG_IBUS_OCP'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Input over-current.'</span><span class="p">,</span> <span class="s1">'The load is above what the adapter can supply.'</span><span class="p">),</span> <span class="s1">'CHG_IBAT_OCP'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Battery over-current.'</span><span class="p">,</span> <span class="s1">'Check for a short or a damaged cell; check battery wiring.'</span><span class="p">),</span> <span class="s1">'CHG_CONVERTER_OCP'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Charger converter over-current.'</span><span class="p">,</span> <span class="s1">'Possible board fault or short on SYS.'</span><span class="p">),</span> <span class="s1">'CHG_VSYS_SHORT'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'System rail (SYS) short circuit.'</span><span class="p">,</span> <span class="s1">'Remove the Pi and accessories; if it persists the board is faulty.'</span><span class="p">),</span> <span class="s1">'CHG_VSYS_OVP'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'System rail (SYS) over-voltage.'</span><span class="p">,</span> <span class="s1">'Board fault; disconnect power.'</span><span class="p">),</span> <span class="s1">'CHG_THERMAL_SHUTDOWN'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Charger thermal shutdown.'</span><span class="p">,</span> <span class="s1">'Improve airflow; reduce load or charge current.'</span><span class="p">),</span> <span class="s1">'CHG_IBAT_REGULATION'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            INFO
+
+
+  
+      module-attribute
+   (ups_hat.faults.INFO)" href="#ups_hat.faults.INFO">INFO</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Battery discharge current is being limited.'</span><span class="p">,</span> <span class="s1">''</span><span class="p">),</span> <span class="s1">'CHG_TIMER_EXPIRED'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Fast-charge safety timer expired before the battery was full.'</span><span class="p">,</span> <span class="s1">'The cells may be worn, or the charge current is too low for their capacity (check cells_parallel).'</span><span class="p">),</span> <span class="s1">'CHG_PRECHARGE_TIMER_EXPIRED'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Pre-charge timer expired: the battery did not recover from deep discharge.'</span><span class="p">,</span> <span class="s1">'A cell is probably damaged. Replace both cells.'</span><span class="p">),</span> <span class="s1">'CHG_TRICKLE_TIMER_EXPIRED'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Trickle-charge timer expired: the battery voltage stayed very low.'</span><span class="p">,</span> <span class="s1">'Check the pack cable; a cell may be dead or the pack fuse blown.'</span><span class="p">),</span> <span class="s1">'CHG_WATCHDOG_EXPIRED'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Charger I2C watchdog expired; charger settings returned to defaults.'</span><span class="p">,</span> <span class="s1">'The library re-applies its settings automatically.'</span><span class="p">),</span> <span class="s1">'CHG_THERMAL_REGULATION'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            INFO
+
+
+  
+      module-attribute
+   (ups_hat.faults.INFO)" href="#ups_hat.faults.INFO">INFO</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Charger is reducing current to limit its temperature.'</span><span class="p">,</span> <span class="s1">'Improve airflow.'</span><span class="p">),</span> <span class="s1">'CHG_INPUT_LIMITED'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            INFO
+
+
+  
+      module-attribute
+   (ups_hat.faults.INFO)" href="#ups_hat.faults.INFO">INFO</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Adapter is at its current or voltage limit.'</span><span class="p">,</span> <span class="s1">'Use a USB-C PD adapter that offers 9 V or 15 V at 3 A (15 V for full load while charging).'</span><span class="p">),</span> <span class="s1">'CHG_POOR_SOURCE'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Weak adapter detected.'</span><span class="p">,</span> <span class="s1">'Use a USB-C PD adapter that offers 9 V or 15 V at 3 A, and a good cable.'</span><span class="p">),</span> <span class="s1">'CHG_RESET_DETECTED'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'charger'</span><span class="p">,</span> <span class="s1">'Charger settings had returned to defaults (power-on reset).'</span><span class="p">,</span> <span class="s1">'The charger lost power: pack disconnected, pack protection tripped or SYS brown-out. Settings re-applied.'</span><span class="p">),</span> <span class="s1">'PD_CC_OVERVOLTAGE'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'pd'</span><span class="p">,</span> <span class="s1">'Over-voltage on the USB-C CC lines.'</span><span class="p">,</span> <span class="s1">'Unplug the cable; it or the adapter is faulty.'</span><span class="p">),</span> <span class="s1">'PD_NO_CONTRACT'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            INFO
+
+
+  
+      module-attribute
+   (ups_hat.faults.INFO)" href="#ups_hat.faults.INFO">INFO</a></span><span class="p">,</span> <span class="s1">'pd'</span><span class="p">,</span> <span class="s1">'Adapter is not USB PD (5 V only).'</span><span class="p">,</span> <span class="s1">'Not supported: the Pi gets about 11 W at most and charging is slow. Use a USB-C PD adapter that offers 9 V or 15 V at 3 A.'</span><span class="p">),</span> <span class="s1">'PD_LOW_CONTRACT'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            INFO
+
+
+  
+      module-attribute
+   (ups_hat.faults.INFO)" href="#ups_hat.faults.INFO">INFO</a></span><span class="p">,</span> <span class="s1">'pd'</span><span class="p">,</span> <span class="s1">'Adapter offered less than 9 V.'</span><span class="p">,</span> <span class="s1">'Use a PD adapter that offers 9 V or 15 V at 3 A.'</span><span class="p">),</span> <span class="s1">'PD_CAPABILITY_MISMATCH'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'pd'</span><span class="p">,</span> <span class="s1">'Adapter cannot supply the current requested.'</span><span class="p">,</span> <span class="s1">'Use a PD adapter that offers 9 V or 15 V at 3 A.'</span><span class="p">),</span> <span class="s1">'PD_CONFIG_MISMATCH'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'pd'</span><span class="p">,</span> <span class="s1">'USB-C controller PDO settings differ from the factory settings.'</span><span class="p">,</span> <span class="s1">'Run UPS.restore_pd_defaults() or contact support.'</span><span class="p">),</span> <span class="s1">'BAT_ABSENT'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'No battery detected.'</span><span class="p">,</span> <span class="s2">"Plug the pack's XT30 lead into J3, switch the pack ON and check its cells are fitted. A pack that is switched off, has tripped its protection or temperature cut-off, or has a blown fuse also reads as absent."</span><span class="p">),</span> <span class="s1">'BAT_WIRING_FAULT'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Battery reads like a single cell or a reversed cell.'</span><span class="p">,</span> <span class="s1">'Check both cells in the pack are fitted the right way round. Charging is stopped.'</span><span class="p">),</span> <span class="s1">'BAT_DEEPLY_DISCHARGED'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Battery is below 6.0 V (deeply discharged).'</span><span class="p">,</span> <span class="s1">'Leave on the adapter; if it does not recover within an hour replace both cells.'</span><span class="p">),</span> <span class="s1">'BAT_LOW'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Battery low.'</span><span class="p">,</span> <span class="s1">'Connect the adapter.'</span><span class="p">),</span> <span class="s1">'BAT_CRITICAL'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Battery critically low; shut down now.'</span><span class="p">,</span> <span class="s1">'Connect the adapter.'</span><span class="p">),</span> <span class="s1">'BAT_CHARGE_BLOCKED'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Charging has stopped before the battery is full.'</span><span class="p">,</span> <span class="s2">"The pack's protection (HY2120) has blocked charging: one cell reached 4.25 V, so the cells are out of balance. Check the cells in the pack."</span><span class="p">),</span> <span class="s1">'BAT_IMBALANCE_SUSPECTED'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Cells appear to be out of balance.'</span><span class="p">,</span> <span class="s1">'Charging repeatedly stops early. Balancing will correct small differences over several charges; replace both cells with a matched pair if it persists.'</span><span class="p">),</span> <span class="s1">'BAT_EARLY_CUTOFF'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Power was lost on battery while the pack still had charge.'</span><span class="p">,</span> <span class="s2">"One cell may be weak, or the load exceeded the pack's protection limit. Check the cells."</span><span class="p">),</span> <span class="s1">'BAT_HIGH_RESISTANCE'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Battery path resistance is high.'</span><span class="p">,</span> <span class="s2">"Clean the pack's cell contacts and check the pack cable and connectors. A gradual rise means the cells are ageing."</span><span class="p">),</span> <span class="s1">'BAT_CAPACITY_LOW'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Measured battery capacity is well below the rated capacity.'</span><span class="p">,</span> <span class="s1">'The cells are worn, or cell_capacity_mah is set too high.'</span><span class="p">),</span> <span class="s1">'BAT_PARALLEL_CELL_MISSING'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Configured for 2S2P but the battery behaves like 2S1P.'</span><span class="p">,</span> <span class="s1">'Check that all four cells are fitted, or set cells_parallel=1.'</span><span class="p">),</span> <span class="s1">'BAT_SELF_DISCHARGE'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Battery needs recharging unusually often while on the adapter.'</span><span class="p">,</span> <span class="s1">'A cell may be leaking charge. Replace both cells if it persists.'</span><span class="p">),</span> <span class="s1">'ADAPTER_INSUFFICIENT'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Running partly from battery while the adapter is connected.'</span><span class="p">,</span> <span class="s1">'The adapter cannot carry the load. Use a USB-C PD adapter that offers 15 V at 3 A.'</span><span class="p">),</span> <span class="s1">'CABLE_RESISTANCE_HIGH'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'High voltage drop in the USB-C cable or connector.'</span><span class="p">,</span> <span class="s1">'Use a shorter or better USB-C cable (rated 3 A or 5 A).'</span><span class="p">),</span> <span class="s1">'OUTPUT_OVERLOAD'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Output power is near the 25 W limit.'</span><span class="p">,</span> <span class="s1">'Reduce the load on the Pi and its USB ports.'</span><span class="p">),</span> <span class="s1">'BOARD_TS_FAULT'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Charger TS input is out of range; charging is blocked.'</span><span class="p">,</span> <span class="s1">'R4/R5 (TS divider, 60 </span><span class="si">% o</span><span class="s1">f REGN) are damaged or missing. Return the board for repair.'</span><span class="p">),</span> <span class="s1">'BOARD_HOT'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Charger temperature is high.'</span><span class="p">,</span> <span class="s1">'Improve airflow around the HAT.'</span><span class="p">),</span> <span class="s1">'BOARD_OVERHEAT'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'Charger temperature is very high.'</span><span class="p">,</span> <span class="s1">'Shut down and improve cooling.'</span><span class="p">),</span> <span class="s1">'PI_UNDERVOLTAGE'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            WARNING
+
+
+  
+      module-attribute
+   (ups_hat.faults.WARNING)" href="#ups_hat.faults.WARNING">WARNING</a></span><span class="p">,</span> <span class="s1">'pi'</span><span class="p">,</span> <span class="s1">'The Pi reports under-voltage on its 5 V input.'</span><span class="p">,</span> <span class="s1">'Reduce load; if SYS is healthy the 5.1 V stage is current limiting.'</span><span class="p">),</span> <span class="s1">'PI_UNDERVOLTAGE_OCCURRED'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            INFO
+
+
+  
+      module-attribute
+   (ups_hat.faults.INFO)" href="#ups_hat.faults.INFO">INFO</a></span><span class="p">,</span> <span class="s1">'pi'</span><span class="p">,</span> <span class="s1">'The Pi has seen under-voltage since boot.'</span><span class="p">,</span> <span class="s1">''</span><span class="p">),</span> <span class="s1">'OUTPUT_5V_FAULT'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            CRITICAL
+
+
+  
+      module-attribute
+   (ups_hat.faults.CRITICAL)" href="#ups_hat.faults.CRITICAL">CRITICAL</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'5 V output is low while the battery/adapter rail is healthy.'</span><span class="p">,</span> <span class="s1">'The 5.1 V stage is current limiting or faulty, or the Pi is drawing more than 5 A.'</span><span class="p">),</span> <span class="s1">'PI_EXTERNAL_SUPPLY'</span><span class="p">:</span> <span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="            INFO
+
+
+  
+      module-attribute
+   (ups_hat.faults.INFO)" href="#ups_hat.faults.INFO">INFO</a></span><span class="p">,</span> <span class="s1">'inferred'</span><span class="p">,</span> <span class="s1">'The Pi appears to be powered from its own USB-C supply.'</span><span class="p">,</span> <span class="s2">"The UPS is not carrying the load. Remove the Pi's own supply to get battery backup."</span><span class="p">)}</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Every fault code: <code>{code: (severity, source, message, advice)}</code>. See <a href="../../faults/">Fault codes</a>.</p>
+
+    </div>
+
+</div>
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="ups_hat.faults.Fault" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">Fault</span>
+
+
+<a href="#ups_hat.faults.Fault" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">Fault</span><span class="p">(</span><span class="n">code</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n"><span title="typing.Optional">Optional</span></span><span class="p">[</span><span class="n"><span title="typing.Dict">Dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">transient</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">since</span><span class="p">:</span> <span class="n"><span title="typing.Optional">Optional</span></span><span class="p">[</span><span class="n"><span title="float">float</span></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>One active or transient fault.</p>
+<p>The severity, source, message and advice come from
+<a class="autorefs autorefs-internal" title="            CATALOGUE
+
+
+  
+      module-attribute
+  " href="#ups_hat.faults.CATALOGUE"><code>CATALOGUE</code></a>. An unknown code is treated as a warning with
+source <code>inferred</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>code</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fault code, for example <code>"BAT_LOW"</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>data</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="typing.Dict">Dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Measurements that explain the fault, for example <code>{"soc": 12.5}</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>transient</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The fault appeared and cleared between two polls.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>since</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="float">float</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Monotonic time (s) when the fault first became active.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="ups_hat.faults.Fault.code">code</span></code></td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fault code.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="ups_hat.faults.Fault.severity">severity</span></code></td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>0 = info, 1 = warning, 2 = critical.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="ups_hat.faults.Fault.source">source</span></code></td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>charger</code>, <code>pd</code>, <code>bus</code>, <code>inferred</code> or <code>pi</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="ups_hat.faults.Fault.message">message</span></code></td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>One-line description.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="ups_hat.faults.Fault.advice">advice</span></code></td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>What the user should do; may be empty.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="ups_hat.faults.Fault.data">data</span></code></td>
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Measurements that explain the fault.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="ups_hat.faults.Fault.transient">transient</span></code></td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The fault came and went between two polls.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="ups_hat.faults.Fault.since">since</span></code></td>
+            <td>
+                  <code><span title="float">float</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Monotonic time (s) when it became active.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="ups_hat.faults.Fault.severity_name" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">severity_name</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#ups_hat.faults.Fault.severity_name" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">severity_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Severity as text: <code>"info"</code>, <code>"warning"</code> or <code>"critical"</code>.</p>
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="ups_hat.faults.Fault.to_dict" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">to_dict</span>
+
+
+<a href="#ups_hat.faults.Fault.to_dict" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">to_dict</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.Dict">Dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convert to a JSON-serialisable dictionary.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.Dict">Dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The fault's attributes, with the severity as text.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 PinGoblin. MIT licence.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "content.code.copy", "search.highlight"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>

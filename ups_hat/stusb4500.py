@@ -79,6 +79,12 @@ class PDO:
         raw (int): 32-bit PDO value.
         voltage (float): Voltage (V), 50 mV steps.
         current (float): Operating current (A), 10 mA steps.
+
+    Example:
+        ```python
+        for pdo in pd.sink_pdos():
+            print(pdo.voltage, pdo.current)
+        ```
     """
 
     def __init__(self, raw):
@@ -103,6 +109,13 @@ class Contract:
         max_current (float): Maximum current (A).
         capability_mismatch (bool): The source cannot supply what the sink asked for.
         give_back (bool): Give-back flag.
+
+    Example:
+        ```python
+        k = pd.contract
+        if k.valid:
+            print(k.position, k.operating_current)
+        ```
     """
 
     def __init__(self, raw):
@@ -115,7 +128,13 @@ class Contract:
 
     @property
     def valid(self):
-        """`True` when a contract is in place."""
+        """`True` when a contract is in place.
+
+        Example:
+            ```python
+            print(pd.contract.valid)
+            ```
+        """
         return self.position != 0
 
     def __repr__(self):
@@ -136,6 +155,15 @@ class STUSB4500:
     Raises:
         DeviceNotFound: `check` is true and the ID is wrong.
         BusError: The chip did not answer.
+
+    Example:
+        ```python
+        from ups_hat import STUSB4500, LinuxI2C
+
+        with LinuxI2C(1) as i2c:
+            pd = STUSB4500(i2c)
+            print(pd.contract, pd.sink_pdos())
+        ```
     """
 
     def __init__(self, i2c, address=ADDRESS, check=True):
@@ -143,11 +171,18 @@ class STUSB4500:
         if check:
             did = self.device_id
             if did not in DEVICE_IDS:
-                raise DeviceNotFound("STUSB4500 not found at 0x%02X (ID 0x%02X)" % (address, did))
+                raise DeviceNotFound("STUSB4500 not found at 0x%02X (ID 0x%02X): another device is using this "
+                                     "address. Check the I2C address and the devices on the bus." % (address, did))
 
     @property
     def device_id(self):
-        """Device ID register (0x21 or 0x25 for an STUSB4500)."""
+        """Device ID register (0x21 or 0x25 for an STUSB4500).
+
+        Example:
+            ```python
+            print(hex(pd.device_id))                 # 0x25
+            ```
+        """
         return self.dev.u8(REG_DEVICE_ID)
 
     # ---- connection status -----------------------------------------------------------
@@ -163,6 +198,11 @@ class STUSB4500:
             `vbus_vsafe0v`, `vbus_ready`, `cc1`, `cc2`, `looking_for_connection`,
             `orientation`, `typec_state`, `vpu_ovp`, `vpu_present`, `vbus_discharge_fault`,
             `pe_state` and `pe_state_text`.
+
+        Example:
+            ```python
+            print(pd.status())
+            ```
         """
         d = self.dev
         port, mon, cc = d.u8(REG_PORT_STATUS), d.u8(REG_MON_STATUS), d.u8(REG_CC_STATUS)
@@ -195,6 +235,11 @@ class STUSB4500:
         Returns:
             Event names: `ATTACH_CHANGED`, `VBUS_VALID_CHANGED`, `VBUS_READY_CHANGED`,
             `VBUS_LOW`, `VBUS_HIGH`, `VPU_OVP`, `THERMAL_FAULT`.
+
+        Example:
+            ```python
+            print(pd.monitoring_events())
+            ```
         """
         port_t = self.dev.u8(REG_PORT_STATUS_TRANS)
         mon_t = self.dev.u8(REG_MON_STATUS_TRANS)
@@ -217,29 +262,59 @@ class STUSB4500:
         return ev
 
     def clear_alerts(self):
-        """Read `ALERT_STATUS` and the transition registers, which clears the ALERT pin."""
+        """Read `ALERT_STATUS` and the transition registers, which clears the ALERT pin.
+
+        Example:
+            ```python
+            pd.clear_alerts()
+            ```
+        """
         self.dev.read(REG_ALERT_STATUS, 0x0D - REG_ALERT_STATUS + 1)
         self.monitoring_events()
 
     @property
     def pe_state(self):
-        """Policy-engine state code (0x18 = sink ready)."""
+        """Policy-engine state code (0x18 = sink ready).
+
+        Example:
+            ```python
+            print(hex(pd.pe_state))                  # 0x18 when sink ready
+            ```
+        """
         return self.dev.u8(REG_PE_FSM)
 
     @property
     def contract_ready(self):
-        """`True` when the policy engine is in the sink-ready state."""
+        """`True` when the policy engine is in the sink-ready state.
+
+        Example:
+            ```python
+            print(pd.contract_ready)
+            ```
+        """
         return self.pe_state == PE_SNK_READY
 
     @property
     def contract(self):
-        """The negotiated contract, read from `RDO_STATUS`."""
+        """The negotiated contract, read from `RDO_STATUS`.
+
+        Example:
+            ```python
+            print(pd.contract)
+            ```
+        """
         return Contract(self.dev.u32le(REG_RDO_STATUS))
 
     # ---- sink PDOs in RAM (loaded from NVM at power-up) -----------------------------
     @property
     def pdo_count(self):
-        """Number of sink PDOs in use, 1 to 3 (RAM copy; lost at power-off)."""
+        """Number of sink PDOs in use, 1 to 3 (RAM copy; lost at power-off).
+
+        Example:
+            ```python
+            print(pd.pdo_count)                      # 3
+            ```
+        """
         return self.dev.u8(REG_DPM_PDO_NUMB) & 7
 
     @pdo_count.setter
@@ -254,6 +329,11 @@ class STUSB4500:
 
         Returns:
             The PDOs, PDO1 first.
+
+        Example:
+            ```python
+            print(pd.sink_pdos())
+            ```
         """
         n = 3 if all_three else self.pdo_count
         return [PDO(self.dev.u32le(REG_DPM_SNK_PDO1 + 4 * i)) for i in range(n)]
@@ -270,9 +350,15 @@ class STUSB4500:
 
         Raises:
             ValueError: `index` is not 1, 2 or 3.
+
+        Example:
+            ```python
+            pd.set_sink_pdo(2, 12.0, 3.0)            # ask for 12 V until the next power cycle
+            pd.renegotiate()
+            ```
         """
         if index not in (1, 2, 3):
-            raise ValueError("PDO index must be 1, 2 or 3")
+            raise ValueError("PDO index must be 1, 2 or 3, not %r" % (index,))
         if index == 1:
             volts = 5.0
         reg = REG_DPM_SNK_PDO1 + 4 * (index - 1)
@@ -286,6 +372,11 @@ class STUSB4500:
         """Send a PD soft reset so the source re-offers and the sink re-requests.
 
         VBUS normally stays up, but the source may briefly drop to 5 V.
+
+        Example:
+            ```python
+            pd.renegotiate()
+            ```
         """
         self.dev.set_u8(REG_TX_HEADER_LOW, 0x0D)
         self.dev.set_u8(REG_CMD_CTRL, 0x26)
@@ -294,6 +385,15 @@ class STUSB4500:
         """Reset the whole chip, as the RESET pin does.
 
         The port detaches and VBUS falls to 5 V or off.
+
+        Danger:
+            Resetting the controller drops the USB PD contract. On battery power the board
+            carries on; on adapter power the board briefly runs from the UPS Pack.
+
+        Example:
+            ```python
+            pd.software_reset()
+            ```
         """
         self.dev.set_u8(REG_RESET_CTRL, 1)
         sleep_ms(30)
@@ -305,7 +405,8 @@ class STUSB4500:
             if not self.dev.u8(REG_FTP_CTRL_0) & FTP_REQ:
                 return
             sleep_ms(1)
-        raise UPSError("STUSB4500 NVM operation timed out")
+        raise UPSError("STUSB4500 NVM operation timed out: the NVM was not changed or is incomplete. "
+                       "Power-cycle the board and try again, or contact PinGoblin support.")
 
     def _ftp_exit(self):
         self.dev.set_u8(REG_FTP_CTRL_0, FTP_RST_N)
@@ -319,6 +420,12 @@ class STUSB4500:
 
         Raises:
             UPSError: An NVM operation timed out.
+
+        Example:
+            ```python
+            sectors = pd.read_nvm()
+            print(STUSB4500.decode_nvm_pdos(sectors))
+            ```
         """
         d = self.dev
         sectors = []
@@ -348,11 +455,27 @@ class STUSB4500:
         Raises:
             UPSError: `confirm` is not true, or an NVM operation timed out.
             ValueError: `sectors` is not five 8-byte sectors.
+
+        Danger:
+            The NVM has limited write endurance, and the PinGoblin UPS HAT+ leaves the factory
+            programmed. Use [`UPS.restore_pd_defaults()`][ups_hat.board.UPS.restore_pd_defaults]
+            without `write_nvm` to correct the settings until the next power cycle.
+
+        Example:
+            ```python
+            from ups_hat import FACTORY_PDOS
+
+            sectors = pd.read_nvm()
+            pd.write_nvm(STUSB4500.encode_nvm_pdos(sectors, FACTORY_PDOS), confirm=True)
+            ```
         """
         if not confirm:
-            raise UPSError("write_nvm needs confirm=True (factory operation)")
+            raise UPSError("write_nvm needs confirm=True: the NVM has limited write endurance and is "
+                           "programmed in the factory. To correct the settings until the next power "
+                           "cycle, use UPS.restore_pd_defaults() without write_nvm.")
         if len(sectors) != 5 or any(len(s) != 8 for s in sectors):
-            raise ValueError("need 5 sectors of 8 bytes")
+            raise ValueError("write_nvm needs 5 sectors of 8 bytes each: start from read_nvm() and "
+                             "change it with encode_nvm_pdos()")
         d = self.dev
         try:
             d.set_u8(REG_FTP_PASSWORD, FTP_PASSWORD)
@@ -388,6 +511,11 @@ class STUSB4500:
 
         Returns:
             `(count, pdos)`: the number of PDOs in use and a list of three `(volts, amps)` pairs.
+
+        Example:
+            ```python
+            print(STUSB4500.decode_nvm_pdos(pd.read_nvm()))
+            ```
         """
         s3, s4 = sectors[3], sectors[4]
 
@@ -416,6 +544,13 @@ class STUSB4500:
         Returns:
             Five new `bytes` sectors, ready for
             [`write_nvm()`][ups_hat.stusb4500.STUSB4500.write_nvm].
+
+        Example:
+            ```python
+            from ups_hat import FACTORY_PDOS
+
+            new = STUSB4500.encode_nvm_pdos(pd.read_nvm(), FACTORY_PDOS)
+            ```
         """
         s = [bytearray(x) for x in sectors]
 

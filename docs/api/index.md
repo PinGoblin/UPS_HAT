@@ -1,32 +1,36 @@
 # PinGoblin UPS HAT+ Library
 
-The `ups_hat` library provides access to everything the PinGoblin UPS HAT+ can measure, control or report. This code will run on CPython / Micropython compatible boards such as the Raspberry Pi, Arduino, and ESP32 and needs no third-party packages.
+The `ups_hat` library reads and controls everything the PinGoblin UPS HAT+ can measure, control or report. The same code runs on a Raspberry Pi (Python 3.7 or later) and on MicroPython boards such as the Raspberry Pi Pico and ESP32. It needs no third-party packages.
 
-The library talks to the below IC's on the USB HAT's I²C bus. 
+The library talks to two chips on the PinGoblin UPS HAT+ I²C bus:
 
 | Chip | Function | Address |
 |---|---|---|
-| BQ25798 (U2) | Charger, power path, ADC, ship mode | 0x6B |
-| STUSB4500 (U1) | USB-C PD sink controller | 0x28 |
+| BQ25798 | Charger, power path, measurements, ship mode | 0x6B |
+| STUSB4500 | USB-C PD controller | 0x28 |
 
-Components such as connected battery packs and the HAT's 5.1 V converter (TPS54620 buck) do not have an I²C interface. This library works out their state from indirect measurements. Where an indirect measurement has been made, and results in a fault conditionl, the fault will be reported as `inferred`. Rev D has no battery temperature sensor: R4/R5 hold the charger's TS input at 60 % of REGN (normal temperature), and the library reports `BOARD_TS_FAULT` if that reading leaves 50–70 %. All PinGolbin battery packs contain temperature sensing, high-temperature charging cut-offs, over/under charge cut-offs and cell balancing.
+The UPS Pack and the 5.1 V output stage have no I²C connection. The library works out their state from the charger's measurements and reports their faults with the source `inferred`.
 
-!!! note "USB-C adapter"
-    The adapter must offer USB PD at 9 V or 15 V, 3 A. A 5 V-only adapter will run a lightly loaded Pi but is not supported (the library will report `PD_LOW_CONTRACT` or `PD_NO_CONTRACT`).
+!!! warning "USB-C adapter"
+    Use a USB PD adapter that offers 9 V or 15 V at 3 A. A 5 V-only adapter is not supported: The library reports `PD_NO_CONTRACT` or `PD_LOW_CONTRACT`.
 
 ## Quick start
 
 ```python
-from ups_hat import UPS
+from ups_hat import UPS, UPSError
 
-ups = UPS(cells_parallel=1, cell_capacity_mah=3000)   # Raspberry Pi
-s = ups.poll()
+try:
+    ups = UPS(cells_parallel=1, cell_capacity_mah=3000)   # Raspberry Pi
+    s = ups.poll()
+except (UPSError, OSError) as e:
+    raise SystemExit("UPS HAT+ not available: %s" % e)
+
 print(s.vbat, s.ibat, s.soc, s.on_battery)
 print(s.fault_codes())
 print(ups.report(s))
 ```
 
-To receive events:
+To act on faults as they happen:
 
 ```python
 @ups.on_fault
@@ -38,8 +42,9 @@ ups.run(interval_s=2)       # poll forever
 
 ## Where next
 
-- [Installation](guide/install.md) on Raspberry Pi OS or MicroPython.
-- [Concepts](guide/concepts.md): polling, units, state of charge and the settings the library enforces.
-- [Power-off integration](guide/power-off.md): the daemon, systemd service and shutdown hook.
-- [Fault codes](faults.md): every fault, its meaning and what to do.
-- [API reference](reference/ups.md): every class, method and property.
+- [Installation](guide/install.md): Raspberry Pi OS or MicroPython.
+- [Concepts](guide/concepts.md): Polling, units, state of charge and the settings the library enforces.
+- [Power-off integration](guide/power-off.md): The service and shutdown hook that shut the Pi down at low battery.
+- [Safety and limits](guide/safety.md): Limits the library enforces, and calls that can cause damage.
+- [Fault codes](faults.md): Every fault, its meaning and what to do.
+- [API reference](reference/ups.md): Every class, method and property.

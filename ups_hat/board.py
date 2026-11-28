@@ -1,4 +1,4 @@
-"""This module exposes a high-level interface to the UPS HAT+ (Rev D and later).
+"""This module exposes a high-level interface to the PinGoblin UPS HAT+.
 
 [`UPS`][ups_hat.board.UPS] is the class most programs use. Each
 [`poll()`][ups_hat.board.UPS.poll] returns a [`Snapshot`][ups_hat.board.Snapshot].
@@ -49,7 +49,8 @@ class Snapshot:
         ibat (float): Battery current (A); positive = charging.
         vsys (float): System rail feeding the 5.1 V converter (V).
         tdie (float): Charger die temperature (°C).
-        ts_pct (float): Charger TS input as % of REGN; about 60 % on Rev D (no NTC).
+        ts_pct (float): Charger temperature-sense input as % of REGN: 60 % at normal
+            temperature. Outside 50–70 % raises `BOARD_TS_FAULT`.
         status (dict): Decoded charger status.
         charger_faults (list[str]): Charger faults active now.
         flags (dict): Latched flags since the last poll: `{"charger": [...], "fault": [...]}`.
@@ -79,6 +80,13 @@ class Snapshot:
         new_faults (list[Fault]): Faults that appeared in this poll.
         cleared_faults (list[Fault]): Faults that cleared in this poll.
         should_shutdown (bool): The battery is critically low; shut the Pi down now.
+
+    Example:
+        ```python
+        s = ups.poll()
+        if s.on_battery and s.soc is not None and s.soc < 20:
+            print("%.0f %% left, %.1f h to empty" % (s.soc, s.time_to_empty_h or 0))
+        ```
     """
 
     def __init__(self):
@@ -123,6 +131,11 @@ class Snapshot:
 
         Returns:
             Fault codes, most severe first.
+
+        Example:
+            ```python
+            print(ups.poll().fault_codes())     # ['BAT_LOW']
+            ```
         """
         return [f.code for f in self.faults]
 
@@ -131,6 +144,14 @@ class Snapshot:
 
         Returns:
             0 = info, 1 = warning, 2 = critical, or -1 when there are no faults.
+
+        Example:
+            ```python
+            from ups_hat import CRITICAL
+
+            if ups.poll().worst_severity() >= CRITICAL:
+                print("Critical fault")
+            ```
         """
         return max([f.severity for f in self.faults] or [-1])
 
@@ -140,6 +161,13 @@ class Snapshot:
         Returns:
             The measured and derived values, the decoded status and the faults. The raw
             `adc` and `contract` objects are left out.
+
+        Example:
+            ```python
+            import json
+
+            print(json.dumps(ups.poll().to_dict(), default=str))
+            ```
         """
         keys = ("time", "wall_time", "charger_ok", "pd_ok", "vbus", "ibus", "vbat", "ibat", "vsys", "tdie", "ts_pct",
                 "adapter_present", "power_good", "on_battery", "charging", "charge_state", "charge_state_text",
@@ -215,7 +243,8 @@ class UPS:
                  low_battery_voltage=6.2, auto_configure=True, protect=True, pi_monitor=True,
                  bus=1):
         if cells_parallel not in (1, 2):
-            raise ValueError("cells_parallel must be 1 or 2")
+            raise ValueError("cells_parallel must be 1 (DUAL pack, 2 cells) or 2 (QUAD pack, 4 cells), "
+                             "not %r" % (cells_parallel,))
         self.i2c = i2c if i2c is not None else open_bus(bus)
         self.cells_parallel = cells_parallel
         self.target_charge_voltage = clamp(charge_voltage, *CHARGE_VOLTAGE_RANGE)
@@ -284,14 +313,16 @@ class UPS:
         if self.charger is None:
             self._connect()
         if self.charger is None:
-            raise DeviceNotFound("BQ25798 charger not found at 0x6B")
+            raise DeviceNotFound("BQ25798 charger not answering at 0x6B: check that the PinGoblin UPS "
+                                 "HAT+ is seated on the header and I2C is enabled")
         return self.charger
 
     def _need_pd(self):
         if self.pd is None:
             self._connect()
         if self.pd is None:
-            raise DeviceNotFound("STUSB4500 not found at 0x28")
+            raise DeviceNotFound("STUSB4500 USB-C controller not answering at 0x28: check that the PinGoblin "
+                                 "UPS HAT+ is seated on the header and I2C is enabled")
         return self.pd
 
     # ---- configuration ---------------------------------------------------------------
@@ -305,6 +336,11 @@ class UPS:
         Raises:
             DeviceNotFound: The charger is not answering.
             BusError: An I²C transfer failed.
+
+        Example:
+            ```python
+            ups.configure()
+            ```
         """
         c = self._need_charger()
         c.watchdog_s = 0                           # settings hold without host kicks
@@ -340,6 +376,11 @@ class UPS:
 
         Raises:
             DeviceNotFound: The charger is not answering.
+
+        Example:
+            ```python
+            ups.sync_input_current_limit()
+            ```
         """
         c = self._need_charger()
         limit = None
@@ -367,6 +408,11 @@ class UPS:
 
         Raises:
             DeviceNotFound: The charger is not answering.
+
+        Example:
+            ```python
+            print(ups.charging_enabled)          # True
+            ```
         """
         return self._need_charger().charge_enabled
 
@@ -381,6 +427,12 @@ class UPS:
 
         Raises:
             DeviceNotFound: The charger is not answering.
+
+        Example:
+            ```python
+            ups.enable_charging(False)           # stop charging
+            ups.enable_charging()                # allow it again
+            ```
         """
         self._charging_wanted = bool(on)
         if not self._charge_disabled_by_protect:
@@ -396,6 +448,11 @@ class UPS:
 
         Raises:
             DeviceNotFound: The charger is not answering.
+
+        Example:
+            ```python
+            ups.set_charge_voltage(8.0)          # 4.00 V per cell, for longer cell life
+            ```
         """
         self.target_charge_voltage = clamp(volts, *CHARGE_VOLTAGE_RANGE)
         self._need_charger().charge_voltage = self.target_charge_voltage
@@ -409,6 +466,11 @@ class UPS:
 
         Raises:
             DeviceNotFound: The charger is not answering.
+
+        Example:
+            ```python
+            ups.set_charge_current(1.0)
+            ```
         """
         self.target_charge_current = clamp(amps, 0.1, CHARGE_CURRENT_MAX)
         self._need_charger().charge_current = self.target_charge_current
@@ -424,13 +486,19 @@ class UPS:
 
         Raises:
             DeviceNotFound: The charger is not answering.
+
+        Example:
+            ```python
+            ups.set_input_current_limit(2.0)
+            ```
         """
         self._need_charger().input_current_limit = clamp(amps, 0.1, INPUT_CURRENT_MAX)
 
     # ---- power control ---------------------------------------------------------------
     def _need_ship_fet(self):
         if not self.ship_fet:
-            raise NotSupported("power off needs the SDRV ship FET (board built with ship_fet=False)")
+            raise NotSupported("power off needs the ship FET, and this UPS was created with "
+                               "ship_fet=False. Pass ship_fet=True if the board has the ship FET fitted.")
         c = self._need_charger()
         c.sfet_present = True
         return c
@@ -442,11 +510,20 @@ class UPS:
         this request while an adapter is connected. Saves the state file first.
 
         Args:
-            delay: Wait about 10 s before disconnecting (TI's built-in delay).
+            delay: Wait 10 s before disconnecting.
 
         Raises:
             NotSupported: The board has no ship FET (`ship_fet=False`).
             DeviceNotFound: The charger is not answering.
+
+        Danger:
+            Cuts power to the Pi. Call it only after the Pi has shut down, or the SD card
+            or SSD can be corrupted.
+
+        Example:
+            ```python
+            ups.ship_mode(delay=True)            # board turns off 10 s later
+            ```
         """
         self._save_state(clean=True)
         self._need_ship_fet().set_ship_fet_control(bq.SDRV_SHIP, delay)
@@ -457,11 +534,20 @@ class UPS:
         Only plugging in an adapter wakes the board; SW1 does not. Saves the state file first.
 
         Args:
-            delay: Wait about 10 s before switching off.
+            delay: Wait 10 s before switching off.
 
         Raises:
             NotSupported: The board has no ship FET (`ship_fet=False`).
             DeviceNotFound: The charger is not answering.
+
+        Danger:
+            Cuts power to the Pi. Call it only after the Pi has shut down, or the SD card
+            or SSD can be corrupted.
+
+        Example:
+            ```python
+            ups.shutdown_mode(delay=True)
+            ```
         """
         self._save_state(clean=True)
         self._need_ship_fet().set_ship_fet_control(bq.SDRV_SHUTDOWN, delay)
@@ -472,11 +558,20 @@ class UPS:
         Saves the state file first.
 
         Args:
-            delay: Wait about 10 s before the power cycle.
+            delay: Wait 10 s before the power cycle.
 
         Raises:
             NotSupported: The board has no ship FET (`ship_fet=False`).
             DeviceNotFound: The charger is not answering.
+
+        Danger:
+            Cuts power to the Pi. Call it only after the Pi has shut down, or the SD card
+            or SSD can be corrupted.
+
+        Example:
+            ```python
+            ups.system_reset(delay=True)
+            ```
         """
         self._save_state(clean=True)
         self._need_ship_fet().set_ship_fet_control(bq.SDRV_SYSTEM_RESET, delay)
@@ -502,6 +597,11 @@ class UPS:
         Raises:
             NotSupported: Ship mode or reset is needed but the board has no ship FET.
             DeviceNotFound: The charger is not answering.
+
+        Example:
+            ```python
+            print(ups.power_off(low_battery=True))   # "ship", "reset" or "none"
+            ```
         """
         if low_battery is None:
             low_battery = self._low_battery_shutdown
@@ -522,6 +622,11 @@ class UPS:
 
         Raises:
             DeviceNotFound: The USB-C controller is not answering.
+
+        Example:
+            ```python
+            ups.renegotiate_pd()
+            ```
         """
         self._need_pd().renegotiate()
 
@@ -533,6 +638,11 @@ class UPS:
 
         Raises:
             DeviceNotFound: The USB-C controller is not answering.
+
+        Example:
+            ```python
+            print(ups.pd_config())
+            ```
         """
         pd = self._need_pd()
         ram = [(p.voltage, p.current) for p in pd.sink_pdos()]
@@ -548,6 +658,12 @@ class UPS:
 
         Raises:
             DeviceNotFound: The USB-C controller is not answering.
+
+        Example:
+            ```python
+            if not ups.check_pd_config():
+                ups.restore_pd_defaults()
+            ```
         """
         pd = self._need_pd()
         pdos = pd.sink_pdos()
@@ -568,6 +684,15 @@ class UPS:
         Raises:
             DeviceNotFound: The USB-C controller is not answering.
             UPSError: The NVM operation timed out.
+
+        Danger:
+            `write_nvm=True` reprograms the USB-C controller's NVM, which has limited write
+            endurance. Use it only when `PD_CONFIG_MISMATCH` returns after a power cycle.
+
+        Example:
+            ```python
+            ups.restore_pd_defaults()            # until the next power cycle
+            ```
         """
         pd = self._need_pd()
         for i, (v, a) in enumerate(FACTORY_PDOS):
@@ -590,6 +715,13 @@ class UPS:
 
         Returns:
             `fn`, unchanged.
+
+        Example:
+            ```python
+            @ups.on_fault
+            def alert(fault):
+                print(fault)
+            ```
         """
         self._callbacks.append(fn)
         return fn
@@ -602,13 +734,25 @@ class UPS:
 
         Returns:
             `fn`, unchanged.
+
+        Example:
+            ```python
+            ups.on_clear(lambda fault: print("cleared", fault.code))
+            ```
         """
         self._clear_callbacks.append(fn)
         return fn
 
     @property
     def faults(self):
-        """Faults active after the last poll (transient faults are not included)."""
+        """Faults active after the last poll (transient faults are not included).
+
+        Example:
+            ```python
+            for fault in ups.faults:
+                print(fault.code, fault.advice)
+            ```
+        """
         return list(self._active.values())
 
     # ---- polling ---------------------------------------------------------------------
@@ -636,6 +780,12 @@ class UPS:
 
         Returns:
             The new snapshot.
+
+        Example:
+            ```python
+            s = ups.poll()
+            print(s.vbat, s.ibat, s.soc, s.fault_codes())
+            ```
         """
         t = now_s()
         s = Snapshot()
@@ -971,6 +1121,11 @@ class UPS:
             interval_s: Seconds between polls.
             callback: Called with each [`Snapshot`][ups_hat.board.Snapshot].
             count: Number of polls; `None` runs forever.
+
+        Example:
+            ```python
+            ups.run(interval_s=2, callback=lambda s: print(s.soc))   # poll forever
+            ```
         """
         n = 0
         while count is None or n < count:
@@ -1029,6 +1184,11 @@ class UPS:
         Args:
             clean: The Pi is shutting down normally, so the next start does not report
                 `BAT_EARLY_CUTOFF`.
+
+        Example:
+            ```python
+            ups.save_state(clean=True)           # on a normal shutdown
+            ```
         """
         self._save_state(clean)
 
@@ -1038,6 +1198,11 @@ class UPS:
         Args:
             code: `"BAT_EARLY_CUTOFF"`, `"BAT_IMBALANCE_SUSPECTED"`, `"BAT_SELF_DISCHARGE"` or
                 `"CHG_RESET_DETECTED"`. Other codes are ignored.
+
+        Example:
+            ```python
+            ups.acknowledge("BAT_EARLY_CUTOFF")
+            ```
         """
         self._boot_events = [e for e in self._boot_events if e[0] != code]
         if code == "BAT_IMBALANCE_SUSPECTED":
@@ -1051,6 +1216,11 @@ class UPS:
         """Forget learned capacity, resistance and history after fitting new cells.
 
         The state of charge is re-estimated from the voltage on the next poll.
+
+        Example:
+            ```python
+            ups.new_cells_fitted()
+            ```
         """
         self.battery.reset_learning()
         self.battery.soc = None
@@ -1070,6 +1240,11 @@ class UPS:
         Returns:
             Several lines of text: power source, input, battery, rails, temperature, capacity
             and faults with advice.
+
+        Example:
+            ```python
+            print(ups.report())
+            ```
         """
         s = s or self.poll()
         L = []

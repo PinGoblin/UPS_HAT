@@ -173,11 +173,19 @@ class LinuxI2CTests(unittest.TestCase):
         self.i2c.close()
         self.os.close.assert_called_once_with(7)
 
-    def test_missing_device_file(self):
-        self.os.open.side_effect = FileNotFoundError(errno.ENOENT, "No such file")
-        with mock.patch.dict(sys.modules, {"os": self.os, "fcntl": self.fcntl}):
-            with self.assertRaises(OSError):
-                LinuxI2C(9)
+    def test_open_errors_say_what_to_do(self):
+        cases = ((errno.ENOENT, FileNotFoundError, "raspi-config"),
+                 (errno.EACCES, PermissionError, "i2c group"),
+                 (errno.EIO, OSError, "I2C is enabled"))
+        for num, kind, hint in cases:
+            with self.subTest(errno=num):
+                self.os.open.side_effect = OSError(num, "error")
+                with mock.patch.dict(sys.modules, {"os": self.os, "fcntl": self.fcntl}):
+                    with self.assertRaises(kind) as cm:
+                        LinuxI2C(9)
+                self.assertEqual(cm.exception.errno, num)
+                self.assertIn("/dev/i2c-9", str(cm.exception))
+                self.assertIn(hint, str(cm.exception))
 
 
 class OpenBusTests(unittest.TestCase):

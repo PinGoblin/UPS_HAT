@@ -1,6 +1,6 @@
 # PinGoblin UPS HAT+
 
-The UPS HAT+ keeps a Raspberry Pi running from a 2-cell lithium-ion battery when mains power fails, and shuts the Pi down cleanly before the battery runs flat. This site is the documentation for the board and its software.
+The PinGoblin UPS HAT+ keeps a Raspberry Pi running from a 2-cell lithium-ion battery when mains power fails, and shuts the Pi down cleanly before the battery runs flat. This site is the documentation for the board and its software.
 
 <div class="grid cards" markdown>
 

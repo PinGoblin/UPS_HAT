@@ -24,6 +24,13 @@ def soc_from_ocv(cell_v):
     Returns:
         Percent of a cell that is full at 4.20 V, 0 to 100, interpolated from
         [`OCV_TABLE`][ups_hat.battery.OCV_TABLE].
+
+    Example:
+        ```python
+        from ups_hat.battery import soc_from_ocv
+
+        print(soc_from_ocv(3.80))                 # % of a cell at rest
+        ```
     """
     t = OCV_TABLE
     if cell_v <= t[0]:
@@ -57,6 +64,16 @@ class BatteryMonitor:
         cycle_mah (float): Total charge discharged (mAh), for cycle counting.
         anchored (bool): The state of charge has a solid reference (full charge or a rested
             voltage).
+
+    Example:
+        ```python
+        import time
+        from ups_hat import BatteryMonitor
+
+        bm = BatteryMonitor(parallel=1, cell_capacity_mah=3000)
+        bm.update(time.monotonic(), vbat=7.6, ibat=-1.2)
+        print(bm.soc, bm.time_to_empty_h(-1.2))
+        ```
     """
     REST_CURRENT = 0.05       # A, below this the pack is "resting"
     REST_TIME = 1800.0        # s of rest before trusting OCV
@@ -83,18 +100,36 @@ class BatteryMonitor:
     # ---- derived ---------------------------------------------------------------------
     @property
     def nominal_capacity_mah(self):
-        """Rated pack capacity (mAh), scaled to the configured full voltage."""
+        """Rated pack capacity (mAh), scaled to the configured full voltage.
+
+        Example:
+            ```python
+            print(bm.nominal_capacity_mah)
+            ```
+        """
         frac = soc_from_ocv(self.full_cell_voltage) / 100.0
         return self.cell_capacity_mah * self.parallel * frac
 
     @property
     def capacity_mah(self):
-        """Pack capacity in use (mAh): the learned capacity if known, otherwise the rated one."""
+        """Pack capacity in use (mAh): the learned capacity if known, otherwise the rated one.
+
+        Example:
+            ```python
+            print(bm.capacity_mah)
+            ```
+        """
         return self.learned_capacity_mah or self.nominal_capacity_mah
 
     @property
     def cycles(self):
-        """Equivalent full discharge cycles so far."""
+        """Equivalent full discharge cycles so far.
+
+        Example:
+            ```python
+            print(bm.cycles)
+            ```
+        """
         return self.cycle_mah / self.capacity_mah if self.capacity_mah else 0.0
 
     def soc_from_voltage(self, pack_v):
@@ -105,6 +140,11 @@ class BatteryMonitor:
 
         Returns:
             Percent of the configured full voltage, 0 to 100.
+
+        Example:
+            ```python
+            print(bm.soc_from_voltage(7.6))
+            ```
         """
         cell = pack_v / self.series
         full = soc_from_ocv(self.full_cell_voltage)
@@ -123,6 +163,11 @@ class BatteryMonitor:
             ibat: Pack current (A); positive = charging.
             charge_done: The charger reports *charge done* with an adapter present.
             present: A battery is connected. `False` skips the update.
+
+        Example:
+            ```python
+            bm.update(time.monotonic(), vbat=7.6, ibat=-1.2)
+            ```
         """
         if not present:
             self._last = None
@@ -188,7 +233,13 @@ class BatteryMonitor:
                 self._ir_samples = []
 
     def reset_learning(self):
-        """Forget the learned capacity, resistance and cycle count (call after fitting new cells)."""
+        """Forget the learned capacity, resistance and cycle count (call after fitting new cells).
+
+        Example:
+            ```python
+            bm.reset_learning()
+            ```
+        """
         self.learned_capacity_mah = None
         self.resistance = None
         self.resistance_baseline = None
@@ -203,6 +254,11 @@ class BatteryMonitor:
 
         Returns:
             Hours, or `None` when not discharging (above −20 mA) or not yet known.
+
+        Example:
+            ```python
+            print(bm.time_to_empty_h(-1.2))          # hours at 1.2 A discharge
+            ```
         """
         if ibat >= -0.02 or self.remaining_mah is None:
             return None
@@ -218,6 +274,11 @@ class BatteryMonitor:
 
         Returns:
             Hours, or `None` when not charging (below 20 mA) or not yet known.
+
+        Example:
+            ```python
+            print(bm.time_to_full_h(1.5))            # hours at 1.5 A charge
+            ```
         """
         if ibat <= 0.02 or self.remaining_mah is None:
             return None
@@ -230,6 +291,11 @@ class BatteryMonitor:
         Returns:
             State of charge, remaining charge, anchoring, learned capacity, resistance, cycle
             count and discharge since full.
+
+        Example:
+            ```python
+            saved = bm.to_dict()
+            ```
         """
         return {"soc": self.soc, "remaining_mah": self.remaining_mah, "anchored": self.anchored,
                 "learned_capacity_mah": self.learned_capacity_mah, "resistance": self.resistance,
@@ -242,6 +308,11 @@ class BatteryMonitor:
         Args:
             d: Saved state.
             restore_soc: Also restore the state of charge.
+
+        Example:
+            ```python
+            bm.from_dict(saved)
+            ```
         """
         self.learned_capacity_mah = d.get("learned_capacity_mah")
         self.resistance = d.get("resistance")

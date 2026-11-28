@@ -55,7 +55,6 @@ nav:
           - Power-off integration: api/guide/power-off.md
           - MicroPython notes: api/guide/micropython.md
           - Safety and limits: api/guide/safety.md
-          - Testing: api/guide/testing.md
       - Fault codes: api/faults.md
       - API reference:
           - UPS and Snapshot: api/reference/ups.md

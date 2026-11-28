@@ -1,41 +1,60 @@
 # MicroPython notes
 
-## RAM use
+The library has the same interface on MicroPython and on the Raspberry Pi. This page lists every difference.
 
-Measured in CI on MicroPython v1.25.0 (unix port), importing the library, creating a [`UPS`][ups_hat.board.UPS] on the register simulator and polling it twice. The 32-bit build is the closest match to RP2040, RP2350 and ESP32 boards.
+## Differences from the Raspberry Pi
 
-| Build | Files | RAM in use after import | RAM in use while running | Smallest heap that works |
-|---|---|---|---|---|
-| 32-bit | `.mpy` (recommended) | 68 KB | 72 KB | 90 KB |
-| 32-bit | `.py` (compiled on the board) | 72 KB | 77 KB | 130 KB |
-| 64-bit | `.mpy` | 101 KB | 109 KB | 142 KB |
-| 64-bit | `.py` | 107 KB | 114 KB | 195 KB |
+| Feature | Raspberry Pi | MicroPython |
+|---|---|---|
+| I²C bus | Opened automatically (`/dev/i2c-1`) | Pass your `machine.I2C` object to `UPS` |
+| Pi 5 supply monitoring (`pi_monitor`) | ✓ | ✗ Pass `pi_monitor=False` |
+| `ups-hat` command-line tool | ✓ | ✗ |
+| Power-off integration (service and shutdown hook) | ✓ | ✗ |
+| `state_file` | ✓ | ✓ On boards with a filesystem. The library saves at most every 5 minutes to limit flash wear. |
 
-- **"Smallest heap that works"** is the figure to compare with your board: run `import gc; gc.collect(); print(gc.mem_free())` before importing anything. It includes the extra memory the compiler needs while it reads `.py` files, which is why `.py` needs about 40 KB more than `.mpy`.
-- **`.mpy` files are recommended.** They skip on-board compilation and leave the most RAM for your own code. Get them from the [latest release](https://github.com/PinGoblin/UPS_HAT/releases/latest); see [Installation](install.md).
-- **To save more RAM**, freeze the package into the firmware. The library's code then runs from flash and only its working data uses the heap.
-- The figures are measured on the unix port, not on a board. Real boards also need RAM for your own program and for drivers such as Wi-Fi. CI re-measures on every pull request: see the `micropython` job's summary.
+## Free RAM needed
 
-## Other notes
+Check the free RAM on your board before importing anything:
 
-- Docstrings are discarded when MicroPython compiles the code, so they cost no RAM. They do take flash space in the `.py` files; `.mpy` files leave them out.
-- The command-line tool and Pi 5 monitoring are not available on MicroPython. Pass `pi_monitor=False`.
-- `state_file` works on boards with a filesystem, but flash wears with frequent writes. The library saves at most every 5 minutes.
+```python
+import gc; gc.collect(); print(gc.mem_free())
+```
+
+| Board | Files | Free RAM needed |
+|---|---|---|
+| 32-bit (RP2040, RP2350, ESP32) | `.mpy` (recommended) | 90 KB |
+| 32-bit (RP2040, RP2350, ESP32) | `.py` | 130 KB |
+| 64-bit | `.mpy` | 142 KB |
+| 64-bit | `.py` | 195 KB |
+
+Figures are for MicroPython 1.25. Your own program and drivers such as Wi-Fi need RAM on top of these.
+
+- **Use the `.mpy` files.** The board does not need to compile them, which saves 40 KB. Get them from the [latest release](https://github.com/PinGoblin/UPS_HAT/releases/latest): See [Installation](install.md).
+- **To save more RAM**, freeze the package into the firmware. The library's code then runs from flash and only its working data uses RAM.
+- Docstrings cost no RAM: MicroPython discards them when it compiles the code.
 
 ## Example
 
-`examples/micropython_main.py`:
+`examples/micropython_main.py` prints the battery state every 2 s and lights the board's LED on a critical fault. Run it on a PC without hardware with `micropython examples/micropython_main.py --mock` from a copy of the repository.
 
 ```python
 import time
 from machine import I2C, Pin
-from ups_hat import UPS, CRITICAL
+from ups_hat import UPS, UPSError, CRITICAL
 
 i2c = I2C(0, sda=Pin(4), scl=Pin(5), freq=400000)
-ups = UPS(i2c, cells_parallel=1, cell_capacity_mah=3000, pi_monitor=False)
+try:
+    ups = UPS(i2c, cells_parallel=1, cell_capacity_mah=3000, pi_monitor=False)
+except UPSError as e:
+    print("UPS HAT+ not available:", e)
+    raise SystemExit(1)
+
+led = Pin("LED", Pin.OUT)
+ups.on_fault(lambda f: print("FAULT", f))
 
 while True:
     s = ups.poll()
     print(s.vbat, s.ibat, s.soc, s.fault_codes())
+    led.value(1 if s.worst_severity() >= CRITICAL else 0)
     time.sleep(2)
 ```

@@ -59,10 +59,19 @@ class CatalogueTests(unittest.TestCase):
     def test_severity_names(self):
         self.assertEqual(SEVERITY_NAMES, ("info", "warning", "critical"))
 
-    def test_hy2120_wording(self):
+    def test_charge_blocked_wording(self):
         adv = CATALOGUE["BAT_CHARGE_BLOCKED"][3]
-        self.assertIn("HY2120", adv)
+        self.assertIn("protection", adv)
         self.assertIn("4.25 V", adv)
+
+    def test_text_follows_the_documentation_style(self):
+        for code, (_, _, msg, adv) in CATALOGUE.items():
+            for text in (msg, adv):
+                with self.subTest(code=code, text=text):
+                    self.assertIsNone(re.search(r": [a-z]", text), "capitalise the word after a colon")
+                    self.assertNotIn("I2C", text, "write I²C")
+                    self.assertNotIn(";", text, "use two sentences, or a colon")
+                    self.assertIsNone(re.search(r"\babout \d", text), "give a definite figure")
 
 
 class FaultTests(unittest.TestCase):

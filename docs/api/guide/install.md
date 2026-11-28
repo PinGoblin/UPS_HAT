@@ -1,47 +1,64 @@
 # Installation
 
-## Python (e.g. Pi)
+## Raspberry Pi
 
-    1. Enable I²C: `sudo raspi-config` → Interface Options → I2C. Alternatively, add `dtparam=i2c_arm=on` to `/boot/firmware/config.txt`.
-    2. Install the library straight from GitHub:
-
-        ```sh
-        sudo pip install git+https://github.com/PinGoblin/UPS_HAT   # add --break-system-packages on Bookworm
-        ups-hat status                                              # or: python3 -m ups_hat.cli status
-        ```
-
-        To install a particular release, add its tag: `git+https://github.com/PinGoblin/UPS_HAT@v1.4.0`. From a downloaded copy of the repository, use `sudo pip install .` instead.
-
-    The library opens `/dev/i2c-1` by itself. Run it as root, or add your user to the `i2c` group.
-
-## MicroPython (e.g. ESP32)
-
-Copy the `ups_hat` folder to the board:
+1. Enable I²C: Run `sudo raspi-config` and choose **Interface Options → I2C**, or add `dtparam=i2c_arm=on` to `/boot/firmware/config.txt` and reboot.
+2. Give your user access to I²C, then log out and back in:
 
     ```sh
-    mpremote cp -r ups_hat :
+    sudo usermod -aG i2c $USER
     ```
 
-    The board then loads the files without compiling them, which needs much less RAM. `README.txt` in the zip shows the `.mpy` version the files were built for; it must match your firmware.
+3. Install the library:
 
-    **Source files with `mip`.** Installs the `.py` files from GitHub into `/lib` on the board:
+    ```sh
+    sudo pip install --break-system-packages git+https://github.com/PinGoblin/UPS_HAT
+    ```
+
+    To install a particular release, add its tag: `git+https://github.com/PinGoblin/UPS_HAT@v1.4.0`.
+
+4. Check that the library can see the PinGoblin UPS HAT+:
+
+    ```sh
+    ups-hat status
+    ```
+
+## MicroPython
+
+Connect the PinGoblin UPS HAT+ header I²C pins to the board: Pin 3 (SDA), pin 5 (SCL) and pin 6 (GND).
+
+=== "Precompiled files (recommended)"
+
+    1. Download `ups_hat-mpy-<version>.zip` from the [latest release](https://github.com/PinGoblin/UPS_HAT/releases/latest) and unzip it.
+    2. Check that the `.mpy` version in `README.txt` in the zip matches your MicroPython firmware.
+    3. Copy the folder to the board:
+
+        ```sh
+        mpremote cp -r ups_hat :
+        ```
+
+    The board loads these files without compiling them, so they need the least RAM.
+
+=== "Source files"
+
+    Install the `.py` files from GitHub into `/lib` on the board:
 
     ```sh
     mpremote mip install github:PinGoblin/UPS_HAT/micropython            # latest
     mpremote mip install github:PinGoblin/UPS_HAT/micropython@v1.4.0     # a release
     ```
 
-    The board compiles these when you import them, which needs extra RAM: see [MicroPython notes](micropython.md) for how much.
+    The board compiles these files when you import them, which needs more RAM: See [MicroPython notes](micropython.md).
 
-    Then, for example on a Raspberry Pi Pico:
+Then create a `UPS` with your board's I²C pins, for example on a Raspberry Pi Pico:
 
-    ```python
-    from machine import I2C, Pin
-    from ups_hat import UPS
+```python
+from machine import I2C, Pin
+from ups_hat import UPS
 
-    ups = UPS(I2C(0, sda=Pin(4), scl=Pin(5), freq=400000), pi_monitor=False)
-    print(ups.report())
-    ```
+ups = UPS(I2C(0, sda=Pin(4), scl=Pin(5), freq=400000), pi_monitor=False)
+print(ups.report())
+```
 
 ## Command-line tool
 
@@ -55,6 +72,10 @@ Raspberry Pi only.
 | `ups-hat faults` | List every fault code. |
 | `ups-hat registers` | Dump the charger registers. |
 | `ups-hat pd` | USB-C PD configuration and contract. |
-| `ups-hat poweroff [low]` | systemd-shutdown hook: ship mode, reset or nothing. |
+| `ups-hat poweroff [low]` | Shutdown hook: Ship mode, reset or nothing. |
 
-The tool reads `UPS_HAT_CELLS_PARALLEL` (default `1`), `UPS_HAT_CELL_MAH` (default `3000`) and `UPS_HAT_STATE` (default `/var/lib/ups-hat/state.json`) from the environment.
+| Environment variable | Default | Meaning |
+|---|---|---|
+| `UPS_HAT_CELLS_PARALLEL` | `1` | `1` for a DUAL pack (2 cells), `2` for a QUAD pack (4 cells). |
+| `UPS_HAT_CELL_MAH` | `3000` | Rated capacity of one cell. |
+| `UPS_HAT_STATE` | `/var/lib/ups-hat/state.json` | File for learned battery data. |

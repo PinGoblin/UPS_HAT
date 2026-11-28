@@ -21,6 +21,15 @@ class PiPower:
 
     Attributes:
         available (bool): `vcgencmd get_throttled` worked when the object was created.
+
+    Example:
+        ```python
+        from ups_hat.pimon import PiPower
+
+        pi = PiPower()
+        if pi.available:
+            print(pi.throttled(), pi.ext5v())
+        ```
     """
 
     def __init__(self):
@@ -50,6 +59,11 @@ class PiPower:
             A dict of booleans (`under_voltage`, `arm_freq_capped`, `throttled`,
             `soft_temp_limit` and the matching `*_occurred` flags since boot) plus `raw`, the
             integer value. `None` if unavailable.
+
+        Example:
+            ```python
+            print(pi.throttled())
+            ```
         """
         if not self.available:
             return None
@@ -66,6 +80,11 @@ class PiPower:
 
         Returns:
             Volts, or `None` on a Pi 4 or earlier, or if unavailable.
+
+        Example:
+            ```python
+            print(pi.ext5v())                        # 5.1 on a Pi 5
+            ```
         """
         if not self.available:
             return None

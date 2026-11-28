@@ -1,13 +1,13 @@
-"""This module provides a low-level driver for the TI BQ25798 buck-boost charger (U2, I²C address 0x6B).
+"""This module provides a low-level driver for the TI BQ25798 buck-boost charger (I²C address 0x6B).
 
 Register map: TI datasheet SLUSDV2. 16-bit registers are most significant byte first.
 Voltages are in volts, currents in amps and temperatures in °C unless the name ends in
 `_mv`, `_ma` or `_raw`.
 
-The UPS HAT+ does not use OTG (it would drive VBUS on a sink-only USB-C port), the
+The PinGoblin UPS HAT+ does not use OTG (it would drive VBUS on a sink-only USB-C port), the
 ACFET/RBFET input switches or MPPT, so this driver deliberately offers no way to turn
-them on. TS has no NTC on Rev D (fixed 60 % divider); `ts_ignore` is exposed for
-completeness and is not used by [`UPS`][ups_hat.board.UPS].
+them on. The board holds the TS input at normal temperature (60 % of REGN), so
+`ts_ignore` is not used by [`UPS`][ups_hat.board.UPS].
 """
 
 from .bus import I2CDevice, DeviceNotFound
@@ -156,6 +156,12 @@ class ADCReading:
         tdie (float): Die temperature (°C).
         dplus (float): D+ voltage (V).
         dminus (float): D− voltage (V).
+
+    Example:
+        ```python
+        adc = chg.read_adc()
+        print(adc.vbat, adc.ibat, adc.tdie)
+        ```
     """
 
     def __init__(self, raw):
@@ -179,7 +185,13 @@ class ADCReading:
         self.dminus = u16(20) / 1000.0
 
     def to_dict(self):
-        """Convert to a dictionary of the eleven readings."""
+        """Convert to a dictionary of the eleven readings.
+
+        Example:
+            ```python
+            print(chg.read_adc().to_dict())
+            ```
+        """
         return {k: getattr(self, k) for k in
                 ("ibus", "ibat", "vbus", "vac1", "vac2", "vbat", "vsys", "ts_pct", "tdie", "dplus", "dminus")}
 
@@ -205,6 +217,20 @@ class BQ25798:
     Raises:
         DeviceNotFound: `check` is true and the part number is not the BQ25798's.
         BusError: The chip did not answer.
+
+    Danger:
+        This driver writes any value within the chip's own range, which can be outside
+        the PinGoblin UPS HAT+ limits and over-charge the cells. Set the charge voltage and
+        current through [`UPS`][ups_hat.board.UPS] instead.
+
+    Example:
+        ```python
+        from ups_hat import BQ25798, LinuxI2C
+
+        with LinuxI2C(1) as i2c:
+            chg = BQ25798(i2c)
+            print(chg.read_adc().vbat, chg.status()["charge_state_text"])
+        ```
     """
 
     def __init__(self, i2c, address=ADDRESS, check=True):
@@ -212,7 +238,8 @@ class BQ25798:
         if check:
             part = self.part_information()
             if part["part_number"] != PART_NUMBER:
-                raise DeviceNotFound("BQ25798 not found at 0x%02X (REG48 = 0x%02X)" % (address, part["raw"]))
+                raise DeviceNotFound("BQ25798 not found at 0x%02X (REG48 = 0x%02X): another device is using this "
+                                     "address. Check the I2C address and the devices on the bus." % (address, part["raw"]))
 
     # ---- raw access ------------------------------------------------------------------
     def field(self, reg, shift, width, wide=False):
@@ -226,6 +253,11 @@ class BQ25798:
 
         Returns:
             The field value.
+
+        Example:
+            ```python
+            print(chg.field(0x0A, 6, 2))          # cells in series, minus 1
+            ```
         """
         return self.dev.field(reg, shift, width, wide)
 
@@ -238,6 +270,11 @@ class BQ25798:
             width: Field width in bits.
             value: New field value.
             wide: The field is in a 16-bit register pair.
+
+        Example:
+            ```python
+            chg.set_field(0x10, 0, 3, 0)          # watchdog off
+            ```
         """
         self.dev.set_field(reg, shift, width, value, wide)
 
@@ -246,6 +283,11 @@ class BQ25798:
 
         Returns:
             `{address: value}`.
+
+        Example:
+            ```python
+            print(hex(chg.dump()[0x1C]))
+            ```
         """
         data = self.dev.read(0x00, 0x49)
         return {i: data[i] for i in range(0x49)}
@@ -255,18 +297,40 @@ class BQ25798:
 
         Returns:
             `{"raw": value, "part_number": pn, "revision": rev}`; the BQ25798 is part number 3.
+
+        Example:
+            ```python
+            print(chg.part_information())         # {'raw': 25, 'part_number': 3, 'revision': 1}
+            ```
         """
         v = self.dev.u8(REG_PART)
         return {"raw": v, "part_number": (v >> 3) & 7, "revision": v & 7}
 
     def reset_registers(self):
-        """Return every register to its power-on default (`REG_RST`)."""
+        """Return every register to its power-on default (`REG_RST`).
+
+        Danger:
+            Returns the charge voltage to the chip default of 8.40 V. Call
+            [`UPS.configure()`][ups_hat.board.UPS.configure] straight afterwards.
+
+        Example:
+            ```python
+            chg.reset_registers()
+            ups.configure()                       # put the board settings back
+            ```
+        """
         self.dev.set_bit(REG_TERM, 6, True)
 
     # ---- voltage / current limits ----------------------------------------------------
     @property
     def min_system_voltage(self):
-        """Minimum system voltage, VSYSMIN (V): 2.5–16 V in 250 mV steps."""
+        """Minimum system voltage, VSYSMIN (V): 2.5–16 V in 250 mV steps.
+
+        Example:
+            ```python
+            print(chg.min_system_voltage)
+            ```
+        """
         return (self.dev.field(REG_VSYSMIN, 0, 6) * 250 + 2500) / 1000.0
 
     @min_system_voltage.setter
@@ -276,7 +340,13 @@ class BQ25798:
 
     @property
     def charge_voltage(self):
-        """Battery charge voltage, VREG (V): 3.0–18.8 V in 10 mV steps."""
+        """Battery charge voltage, VREG (V): 3.0–18.8 V in 10 mV steps.
+
+        Example:
+            ```python
+            print(chg.charge_voltage)
+            ```
+        """
         return self.dev.field(REG_VREG, 0, 11, True) * 10 / 1000.0
 
     @charge_voltage.setter
@@ -285,7 +355,13 @@ class BQ25798:
 
     @property
     def charge_current(self):
-        """Fast-charge current, ICHG (A): 0.05–5 A in 10 mA steps."""
+        """Fast-charge current, ICHG (A): 0.05–5 A in 10 mA steps.
+
+        Example:
+            ```python
+            print(chg.charge_current)
+            ```
+        """
         return self.dev.field(REG_ICHG, 0, 9, True) * 10 / 1000.0
 
     @charge_current.setter
@@ -294,7 +370,13 @@ class BQ25798:
 
     @property
     def input_voltage_limit(self):
-        """Input voltage regulation limit, VINDPM (V): 3.6–22 V in 100 mV steps."""
+        """Input voltage regulation limit, VINDPM (V): 3.6–22 V in 100 mV steps.
+
+        Example:
+            ```python
+            print(chg.input_voltage_limit)
+            ```
+        """
         return self.dev.u8(REG_VINDPM) * 100 / 1000.0
 
     @input_voltage_limit.setter
@@ -303,7 +385,13 @@ class BQ25798:
 
     @property
     def input_current_limit(self):
-        """Input current limit, IINDPM (A): 0.1–3.3 A in 10 mA steps."""
+        """Input current limit, IINDPM (A): 0.1–3.3 A in 10 mA steps.
+
+        Example:
+            ```python
+            print(chg.input_current_limit)
+            ```
+        """
         return self.dev.field(REG_IINDPM, 0, 9, True) * 10 / 1000.0
 
     @input_current_limit.setter
@@ -312,7 +400,13 @@ class BQ25798:
 
     @property
     def precharge_current(self):
-        """Pre-charge current (A): 0.04–2 A in 40 mA steps."""
+        """Pre-charge current (A): 0.04–2 A in 40 mA steps.
+
+        Example:
+            ```python
+            print(chg.precharge_current)
+            ```
+        """
         return self.dev.field(REG_PRECHG, 0, 6) * 40 / 1000.0
 
     @precharge_current.setter
@@ -321,7 +415,13 @@ class BQ25798:
 
     @property
     def precharge_threshold_pct(self):
-        """Pre-charge to fast-charge threshold, % of the charge voltage: 15, 62.2, 66.7 or 71.4."""
+        """Pre-charge to fast-charge threshold, % of the charge voltage: 15, 62.2, 66.7 or 71.4.
+
+        Example:
+            ```python
+            print(chg.precharge_threshold_pct)
+            ```
+        """
         return VBAT_LOWV_PCT[self.dev.field(REG_PRECHG, 6, 2)]
 
     @precharge_threshold_pct.setter
@@ -330,7 +430,13 @@ class BQ25798:
 
     @property
     def termination_current(self):
-        """Termination current (A): 0.04–1 A in 40 mA steps."""
+        """Termination current (A): 0.04–1 A in 40 mA steps.
+
+        Example:
+            ```python
+            print(chg.termination_current)
+            ```
+        """
         return self.dev.field(REG_TERM, 0, 5) * 40 / 1000.0
 
     @termination_current.setter
@@ -339,7 +445,13 @@ class BQ25798:
 
     @property
     def stop_charge_on_watchdog(self):
-        """Stop charging when the I²C watchdog expires."""
+        """Stop charging when the I²C watchdog expires.
+
+        Example:
+            ```python
+            print(chg.stop_charge_on_watchdog)
+            ```
+        """
         return self.dev.bit(REG_TERM, 5)
 
     @stop_charge_on_watchdog.setter
@@ -348,12 +460,24 @@ class BQ25798:
 
     @property
     def cell_count(self):
-        """Cells in series, set by the PROG resistor at power-up (2 on this board). Read only."""
+        """Cells in series, set by the PROG resistor at power-up (2 on this board). Read only.
+
+        Example:
+            ```python
+            print(chg.cell_count)
+            ```
+        """
         return self.dev.field(REG_RECHG, 6, 2) + 1
 
     @property
     def recharge_deglitch_ms(self):
-        """Recharge deglitch time (ms): 64, 256, 1024 or 2048."""
+        """Recharge deglitch time (ms): 64, 256, 1024 or 2048.
+
+        Example:
+            ```python
+            print(chg.recharge_deglitch_ms)
+            ```
+        """
         return TRECHG_MS[self.dev.field(REG_RECHG, 4, 2)]
 
     @recharge_deglitch_ms.setter
@@ -362,7 +486,13 @@ class BQ25798:
 
     @property
     def recharge_offset(self):
-        """Recharge threshold below the charge voltage (V): 0.05–0.8 V in 50 mV steps."""
+        """Recharge threshold below the charge voltage (V): 0.05–0.8 V in 50 mV steps.
+
+        Example:
+            ```python
+            print(chg.recharge_offset)
+            ```
+        """
         return (self.dev.field(REG_RECHG, 0, 4) * 50 + 50) / 1000.0
 
     @recharge_offset.setter
@@ -371,13 +501,25 @@ class BQ25798:
 
     @property
     def ico_current_limit(self):
-        """Input current limit found by the ICO algorithm (A). Read only."""
+        """Input current limit found by the ICO algorithm (A). Read only.
+
+        Example:
+            ```python
+            print(chg.ico_current_limit)
+            ```
+        """
         return self.dev.field(REG_ICO_ILIM, 0, 9, True) * 10 / 1000.0
 
     # ---- timers ----------------------------------------------------------------------
     @property
     def precharge_timer_short(self):
-        """Pre-charge safety timer length: `True` = 0.5 h, `False` = 2 h."""
+        """Pre-charge safety timer length: `True` = 0.5 h, `False` = 2 h.
+
+        Example:
+            ```python
+            print(chg.precharge_timer_short)
+            ```
+        """
         return self.dev.bit(REG_IOTG, 7)
 
     @precharge_timer_short.setter
@@ -386,7 +528,13 @@ class BQ25798:
 
     @property
     def topoff_timer_min(self):
-        """Top-off timer after termination (minutes): 0, 15, 30 or 45."""
+        """Top-off timer after termination (minutes): 0, 15, 30 or 45.
+
+        Example:
+            ```python
+            print(chg.topoff_timer_min)
+            ```
+        """
         return TOPOFF_MIN[self.dev.field(REG_TIMER, 6, 2)]
 
     @topoff_timer_min.setter
@@ -395,7 +543,13 @@ class BQ25798:
 
     @property
     def trickle_timer_enabled(self):
-        """Trickle-charge safety timer on."""
+        """Trickle-charge safety timer on.
+
+        Example:
+            ```python
+            print(chg.trickle_timer_enabled)
+            ```
+        """
         return self.dev.bit(REG_TIMER, 5)
 
     @trickle_timer_enabled.setter
@@ -404,7 +558,13 @@ class BQ25798:
 
     @property
     def precharge_timer_enabled(self):
-        """Pre-charge safety timer on."""
+        """Pre-charge safety timer on.
+
+        Example:
+            ```python
+            print(chg.precharge_timer_enabled)
+            ```
+        """
         return self.dev.bit(REG_TIMER, 4)
 
     @precharge_timer_enabled.setter
@@ -413,7 +573,13 @@ class BQ25798:
 
     @property
     def charge_timer_enabled(self):
-        """Fast-charge safety timer on."""
+        """Fast-charge safety timer on.
+
+        Example:
+            ```python
+            print(chg.charge_timer_enabled)
+            ```
+        """
         return self.dev.bit(REG_TIMER, 3)
 
     @charge_timer_enabled.setter
@@ -422,7 +588,13 @@ class BQ25798:
 
     @property
     def charge_timer_h(self):
-        """Fast-charge safety timer length (hours): 5, 8, 12 or 24."""
+        """Fast-charge safety timer length (hours): 5, 8, 12 or 24.
+
+        Example:
+            ```python
+            print(chg.charge_timer_h)
+            ```
+        """
         return CHG_TIMER_H[self.dev.field(REG_TIMER, 1, 2)]
 
     @charge_timer_h.setter
@@ -431,7 +603,13 @@ class BQ25798:
 
     @property
     def timer_half_rate(self):
-        """Safety timers run at half speed during input limiting or thermal regulation."""
+        """Safety timers run at half speed during input limiting or thermal regulation.
+
+        Example:
+            ```python
+            print(chg.timer_half_rate)
+            ```
+        """
         return self.dev.bit(REG_TIMER, 0)
 
     @timer_half_rate.setter
@@ -441,7 +619,13 @@ class BQ25798:
     # ---- charger control 0 -----------------------------------------------------------
     @property
     def auto_battery_discharge_on_ovp(self):
-        """Discharge the battery automatically on battery over-voltage."""
+        """Discharge the battery automatically on battery over-voltage.
+
+        Example:
+            ```python
+            print(chg.auto_battery_discharge_on_ovp)
+            ```
+        """
         return self.dev.bit(REG_CTRL0, 7)
 
     @auto_battery_discharge_on_ovp.setter
@@ -450,7 +634,13 @@ class BQ25798:
 
     @property
     def force_battery_discharge(self):
-        """Force a battery discharge current (about 30 mA)."""
+        """Force a battery discharge current (about 30 mA).
+
+        Example:
+            ```python
+            print(chg.force_battery_discharge)
+            ```
+        """
         return self.dev.bit(REG_CTRL0, 6)
 
     @force_battery_discharge.setter
@@ -459,7 +649,13 @@ class BQ25798:
 
     @property
     def charge_enabled(self):
-        """Charging allowed (`EN_CHG`)."""
+        """Charging allowed (`EN_CHG`).
+
+        Example:
+            ```python
+            print(chg.charge_enabled)
+            ```
+        """
         return self.dev.bit(REG_CTRL0, 5)
 
     @charge_enabled.setter
@@ -468,7 +664,13 @@ class BQ25798:
 
     @property
     def ico_enabled(self):
-        """Input current optimiser (ICO) on."""
+        """Input current optimiser (ICO) on.
+
+        Example:
+            ```python
+            print(chg.ico_enabled)
+            ```
+        """
         return self.dev.bit(REG_CTRL0, 4)
 
     @ico_enabled.setter
@@ -476,12 +678,24 @@ class BQ25798:
         self.dev.set_bit(REG_CTRL0, 4, on)
 
     def force_ico(self):
-        """Restart input current optimisation (needs `ico_enabled`)."""
+        """Restart input current optimisation (needs `ico_enabled`).
+
+        Example:
+            ```python
+            chg.force_ico()
+            ```
+        """
         self.dev.set_bit(REG_CTRL0, 3, True)
 
     @property
     def hiz(self):
-        """High-impedance input mode: the charger draws nothing from the adapter."""
+        """High-impedance input mode: the charger draws nothing from the adapter.
+
+        Example:
+            ```python
+            print(chg.hiz)
+            ```
+        """
         return self.dev.bit(REG_CTRL0, 2)
 
     @hiz.setter
@@ -490,7 +704,13 @@ class BQ25798:
 
     @property
     def termination_enabled(self):
-        """Charge termination on."""
+        """Charge termination on.
+
+        Example:
+            ```python
+            print(chg.termination_enabled)
+            ```
+        """
         return self.dev.bit(REG_CTRL0, 1)
 
     @termination_enabled.setter
@@ -500,7 +720,13 @@ class BQ25798:
     # ---- charger control 1 -----------------------------------------------------------
     @property
     def vac_ovp(self):
-        """VAC over-voltage threshold (V): 7, 12, 22 or 26."""
+        """VAC over-voltage threshold (V): 7, 12, 22 or 26.
+
+        Example:
+            ```python
+            print(chg.vac_ovp)
+            ```
+        """
         return VAC_OVP_V[self.dev.field(REG_CTRL1, 4, 2)]
 
     @vac_ovp.setter
@@ -508,12 +734,24 @@ class BQ25798:
         self.dev.set_field(REG_CTRL1, 4, 2, _nearest(VAC_OVP_V, volts))
 
     def kick_watchdog(self):
-        """Reset the I²C watchdog timer."""
+        """Reset the I²C watchdog timer.
+
+        Example:
+            ```python
+            chg.kick_watchdog()
+            ```
+        """
         self.dev.set_bit(REG_CTRL1, 3, True)
 
     @property
     def watchdog_s(self):
-        """I²C watchdog period (s): 0 (off), 0.5, 1, 2, 20, 40, 80 or 160."""
+        """I²C watchdog period (s): 0 (off), 0.5, 1, 2, 20, 40, 80 or 160.
+
+        Example:
+            ```python
+            print(chg.watchdog_s)
+            ```
+        """
         return WATCHDOG_S[self.dev.field(REG_CTRL1, 0, 3)]
 
     @watchdog_s.setter
@@ -522,12 +760,24 @@ class BQ25798:
 
     # ---- charger control 2: input detection and ship FET -----------------------------
     def force_input_detection(self):
-        """Re-run D+/D− adapter detection."""
+        """Re-run D+/D− adapter detection.
+
+        Example:
+            ```python
+            chg.force_input_detection()
+            ```
+        """
         self.dev.set_bit(REG_CTRL2, 7, True)
 
     @property
     def auto_input_detection(self):
-        """Run D+/D− adapter detection automatically when VBUS appears."""
+        """Run D+/D− adapter detection automatically when VBUS appears.
+
+        Example:
+            ```python
+            print(chg.auto_input_detection)
+            ```
+        """
         return self.dev.bit(REG_CTRL2, 6)
 
     @auto_input_detection.setter
@@ -539,6 +789,11 @@ class BQ25798:
         """HVDCP settings as `(HVDCP_EN, EN_9V, EN_12V)`. Read only.
 
         The UPS HAT+ negotiates voltage with the STUSB4500, so leave these off.
+
+        Example:
+            ```python
+            print(chg.hvdcp)
+            ```
         """
         v = self.dev.u8(REG_CTRL2)
         return (bool(v & 0x08), bool(v & 0x10), bool(v & 0x20))
@@ -547,6 +802,11 @@ class BQ25798:
     def ship_fet_control(self):
         """`SDRV_CTRL` field: one of the `SDRV_*` codes. Read only; write with
         [`set_ship_fet_control()`][ups_hat.bq25798.BQ25798.set_ship_fet_control].
+
+        Example:
+            ```python
+            print(chg.ship_fet_control)
+            ```
         """
         return self.dev.field(REG_CTRL2, 1, 2)
 
@@ -559,6 +819,17 @@ class BQ25798:
         Args:
             mode: `SDRV_IDLE`, `SDRV_SHUTDOWN`, `SDRV_SHIP` or `SDRV_SYSTEM_RESET`.
             delay: Add TI's 10 s delay before acting.
+
+        Danger:
+            `SDRV_SHIP`, `SDRV_SHUTDOWN` and `SDRV_SYSTEM_RESET` cut power to the Pi. Use them
+            only after the Pi has shut down.
+
+        Example:
+            ```python
+            from ups_hat.bq25798 import SDRV_IDLE
+
+            chg.set_ship_fet_control(SDRV_IDLE)
+            ```
         """
         v = self.dev.u8(REG_CTRL2)
         v = (v & ~0x07) | ((mode & 3) << 1) | (0 if delay else 1)
@@ -567,7 +838,13 @@ class BQ25798:
     # ---- charger control 3 / 4 -------------------------------------------------------
     @property
     def pfm_forward_disabled(self):
-        """PFM (light-load pulse-frequency mode) off in forward mode."""
+        """PFM (light-load pulse-frequency mode) off in forward mode.
+
+        Example:
+            ```python
+            print(chg.pfm_forward_disabled)
+            ```
+        """
         return self.dev.bit(REG_CTRL3, 4)
 
     @pfm_forward_disabled.setter
@@ -576,7 +853,13 @@ class BQ25798:
 
     @property
     def ship_wakeup_short(self):
-        """QON press that wakes from ship mode: `True` = 15 ms, `False` = 1 s."""
+        """QON press that wakes from ship mode: `True` = 15 ms, `False` = 1 s.
+
+        Example:
+            ```python
+            print(chg.ship_wakeup_short)
+            ```
+        """
         return self.dev.bit(REG_CTRL3, 3)
 
     @ship_wakeup_short.setter
@@ -585,7 +868,13 @@ class BQ25798:
 
     @property
     def batfet_ldo_disabled(self):
-        """BATFET LDO mode off during pre-charge."""
+        """BATFET LDO mode off during pre-charge.
+
+        Example:
+            ```python
+            print(chg.batfet_ldo_disabled)
+            ```
+        """
         return self.dev.bit(REG_CTRL3, 2)
 
     @batfet_ldo_disabled.setter
@@ -594,7 +883,13 @@ class BQ25798:
 
     @property
     def forward_ooa_disabled(self):
-        """Out-of-audio mode off in forward mode."""
+        """Out-of-audio mode off in forward mode.
+
+        Example:
+            ```python
+            print(chg.forward_ooa_disabled)
+            ```
+        """
         return self.dev.bit(REG_CTRL3, 0)
 
     @forward_ooa_disabled.setter
@@ -603,12 +898,24 @@ class BQ25798:
 
     @property
     def switching_frequency_khz(self):
-        """Converter switching frequency (kHz), set by the PROG resistor at power-up (750 on this board). Read only."""
+        """Converter switching frequency (kHz), set by the PROG resistor at power-up (750 on this board). Read only.
+
+        Example:
+            ```python
+            print(chg.switching_frequency_khz)
+            ```
+        """
         return 750 if self.dev.bit(REG_CTRL4, 5) else 1500
 
     @property
     def stat_pin_disabled(self):
-        """STAT pin output off."""
+        """STAT pin output off.
+
+        Example:
+            ```python
+            print(chg.stat_pin_disabled)
+            ```
+        """
         return self.dev.bit(REG_CTRL4, 4)
 
     @stat_pin_disabled.setter
@@ -617,7 +924,13 @@ class BQ25798:
 
     @property
     def vsys_short_protection(self):
-        """VSYS short-circuit protection (hiccup mode) on."""
+        """VSYS short-circuit protection (hiccup mode) on.
+
+        Example:
+            ```python
+            print(chg.vsys_short_protection)
+            ```
+        """
         return not self.dev.bit(REG_CTRL4, 3)
 
     @vsys_short_protection.setter
@@ -625,12 +938,24 @@ class BQ25798:
         self.dev.set_bit(REG_CTRL4, 3, not on)
 
     def force_vindpm_detection(self):
-        """Re-measure the adapter's open-circuit voltage to set VINDPM."""
+        """Re-measure the adapter's open-circuit voltage to set VINDPM.
+
+        Example:
+            ```python
+            chg.force_vindpm_detection()
+            ```
+        """
         self.dev.set_bit(REG_CTRL4, 1, True)
 
     @property
     def ibus_ocp_enabled(self):
-        """Input over-current protection on."""
+        """Input over-current protection on.
+
+        Example:
+            ```python
+            print(chg.ibus_ocp_enabled)
+            ```
+        """
         return self.dev.bit(REG_CTRL4, 0)
 
     @ibus_ocp_enabled.setter
@@ -644,6 +969,11 @@ class BQ25798:
 
         Must be `True` for `SDRV_CTRL` (ship, shutdown, reset) and QON to work. Returns to
         `False` whenever the chip loses all power.
+
+        Example:
+            ```python
+            print(chg.sfet_present)
+            ```
         """
         return self.dev.bit(REG_CTRL5, 7)
 
@@ -653,7 +983,13 @@ class BQ25798:
 
     @property
     def ibat_discharge_sensing(self):
-        """Measure discharge current in battery-only mode (`EN_IBAT`). Needed for IBAT on battery."""
+        """Measure discharge current in battery-only mode (`EN_IBAT`). Needed for IBAT on battery.
+
+        Example:
+            ```python
+            print(chg.ibat_discharge_sensing)
+            ```
+        """
         return self.dev.bit(REG_CTRL5, 5)
 
     @ibat_discharge_sensing.setter
@@ -662,7 +998,13 @@ class BQ25798:
 
     @property
     def iindpm_enabled(self):
-        """Input current regulation (IINDPM) on."""
+        """Input current regulation (IINDPM) on.
+
+        Example:
+            ```python
+            print(chg.iindpm_enabled)
+            ```
+        """
         return self.dev.bit(REG_CTRL5, 2)
 
     @iindpm_enabled.setter
@@ -671,7 +1013,13 @@ class BQ25798:
 
     @property
     def ilim_pin_enabled(self):
-        """ILIM_HIZ pin current limit on."""
+        """ILIM_HIZ pin current limit on.
+
+        Example:
+            ```python
+            print(chg.ilim_pin_enabled)
+            ```
+        """
         return self.dev.bit(REG_CTRL5, 1)
 
     @ilim_pin_enabled.setter
@@ -680,7 +1028,13 @@ class BQ25798:
 
     @property
     def battery_ocp_enabled(self):
-        """Turn the ship FET off on battery discharge over-current (`EN_BATOC`, needs `sfet_present`)."""
+        """Turn the ship FET off on battery discharge over-current (`EN_BATOC`, needs `sfet_present`).
+
+        Example:
+            ```python
+            print(chg.battery_ocp_enabled)
+            ```
+        """
         return self.dev.bit(REG_CTRL5, 0)
 
     @battery_ocp_enabled.setter
@@ -690,7 +1044,13 @@ class BQ25798:
     # ---- temperature control ---------------------------------------------------------
     @property
     def thermal_regulation_c(self):
-        """Die temperature at which charge current is reduced (°C): 60, 80, 100 or 120."""
+        """Die temperature at which charge current is reduced (°C): 60, 80, 100 or 120.
+
+        Example:
+            ```python
+            print(chg.thermal_regulation_c)
+            ```
+        """
         return TREG_C[self.dev.field(REG_TEMP, 6, 2)]
 
     @thermal_regulation_c.setter
@@ -699,7 +1059,13 @@ class BQ25798:
 
     @property
     def thermal_shutdown_c(self):
-        """Die temperature at which the charger shuts down (°C): 85, 120, 130 or 150."""
+        """Die temperature at which the charger shuts down (°C): 85, 120, 130 or 150.
+
+        Example:
+            ```python
+            print(chg.thermal_shutdown_c)
+            ```
+        """
         return TSHUT_C[self.dev.field(REG_TEMP, 4, 2)]
 
     @thermal_shutdown_c.setter
@@ -708,7 +1074,13 @@ class BQ25798:
 
     @property
     def vbus_pulldown(self):
-        """VBUS pull-down resistor on."""
+        """VBUS pull-down resistor on.
+
+        Example:
+            ```python
+            print(chg.vbus_pulldown)
+            ```
+        """
         return self.dev.bit(REG_TEMP, 3)
 
     @vbus_pulldown.setter
@@ -721,8 +1093,13 @@ class BQ25798:
 
         `True` makes the charger behave as if at room temperature: no JEITA limits and no
         cold/hot stop. Reset to `False` by power-on reset, `REG_RST` and the I²C watchdog, so
-        re-apply it after any charger reset. Not used on Rev D, whose TS divider already reads
-        as normal temperature.
+        re-apply it after any charger reset. Not needed on the PinGoblin UPS HAT+, whose TS
+        input already reads as normal temperature.
+
+        Example:
+            ```python
+            print(chg.ts_ignore)
+            ```
         """
         return self.dev.bit(REG_NTC1, 0)
 
@@ -739,6 +1116,11 @@ class BQ25798:
             `VBUS_PRESENT`, `VBAT_PRESENT`, `TS_COLD`), plus `charge_state` and
             `charge_state_text`, `vbus_type` and `vbus_type_text`, and `ico_state` and
             `ico_state_text`.
+
+        Example:
+            ```python
+            print(chg.status()["charge_state_text"])
+            ```
         """
         raw = self.dev.read(REG_STAT0, 5)
         out = _decode(STATUS_BITS, raw)
@@ -758,6 +1140,11 @@ class BQ25798:
 
         Returns:
             Fault names, for example `["VBAT_OVP"]`.
+
+        Example:
+            ```python
+            print(chg.faults())
+            ```
         """
         raw = self.dev.read(REG_FAULT0, 2)
         d = _decode(FAULT_BITS, raw)
@@ -771,6 +1158,11 @@ class BQ25798:
 
         Returns:
             `{"charger": [names], "fault": [names]}`.
+
+        Example:
+            ```python
+            print(chg.read_flags())
+            ```
         """
         raw = self.dev.read(REG_FLAG0, 6)
         ch = _decode(FLAG_BITS, raw[0:4])
@@ -786,6 +1178,11 @@ class BQ25798:
             continuous: Convert continuously; `False` takes one reading.
             bits: Resolution: 12, 13, 14 or 15 (nearest is used).
             average: Running average on.
+
+        Example:
+            ```python
+            chg.adc_enable(True, continuous=True, bits=15)
+            ```
         """
         code = _nearest(ADC_BITS, bits)
         v = (0x80 if on else 0) | (0 if continuous else 0x40) | (code << 4) | (0x08 if average else 0) \
@@ -794,12 +1191,24 @@ class BQ25798:
 
     @property
     def adc_enabled(self):
-        """ADC on."""
+        """ADC on.
+
+        Example:
+            ```python
+            print(chg.adc_enabled)
+            ```
+        """
         return self.dev.bit(REG_ADC_CTRL, 7)
 
     @property
     def adc_disable_mask(self):
-        """Raw channel-disable bits as `(REG0x2F, REG0x30)`; `(0, 0)` = all channels on."""
+        """Raw channel-disable bits as `(REG0x2F, REG0x30)`; `(0, 0)` = all channels on.
+
+        Example:
+            ```python
+            print(chg.adc_disable_mask)
+            ```
+        """
         return (self.dev.u8(REG_ADC_DIS0), self.dev.u8(REG_ADC_DIS1))
 
     def read_adc(self):
@@ -807,6 +1216,11 @@ class BQ25798:
 
         Returns:
             The readings.
+
+        Example:
+            ```python
+            print(chg.read_adc())
+            ```
         """
         return ADCReading(self.dev.read(REG_IBUS_ADC, 22))
 

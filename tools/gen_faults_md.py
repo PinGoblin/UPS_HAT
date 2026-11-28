@@ -20,13 +20,22 @@ def render():
     lines = [
         "# Fault codes",
         "",
-        "These fault codes are listed in [`CATALOGUE`][ups_hat.faults.CATALOGUE] and have the following attributes:",
+        "Every fault the library reports, with what to do. [`CATALOGUE`][ups_hat.faults.CATALOGUE] holds the same list.",
         "",
-        "- **Severity:** `info` needs no action, `warning` needs attention, `critical` needs action now.",
-        "- **Source:** `charger` and `pd` faults are read from the chips; `bus` means a chip did not answer; "
-        "`pi` comes from the Raspberry Pi 5 firmware; `inferred` faults are calculated indirectly from measurements "
-        "over time. Most inferred faults are strong hints rather than proof of a fault, and must persist for a few "
-        "seconds to a few minutes before they are reported.",
+        "| Severity | Meaning |",
+        "|---|---|",
+        "| `critical` | Act now. |",
+        "| `warning` | Needs attention. |",
+        "| `info` | No action needed. |",
+        "",
+        "| Source | Meaning |",
+        "|---|---|",
+        "| `charger` | Read from the BQ25798 charger. |",
+        "| `pd` | Read from the STUSB4500 USB-C controller. |",
+        "| `bus` | A chip did not answer on I²C. |",
+        "| `inferred` | Worked out from measurements over time. Most must hold for 5 s to 2 minutes before they "
+        "are reported. Confirm an inferred battery fault by measuring the cells before replacing anything. |",
+        "| `pi` | Read from the Raspberry Pi 5 firmware. |",
         "",
         "| Code | Severity | Source | Meaning | What to do |",
         "|---|---|---|---|---|",

@@ -24,7 +24,8 @@ def docstring_examples():
     """Yield (qualified name, code) for every ```python block in an Example section."""
     for mod in MODULES:
         path = os.path.join(helpers.ROOT, "ups_hat", mod + ".py")
-        tree = ast.parse(open(path).read())
+        with open(path) as f:
+            tree = ast.parse(f.read())
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.ClassDef)):
                 continue
